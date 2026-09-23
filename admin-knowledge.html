@@ -1,0 +1,771 @@
+<!DOCTYPE html>
+<html lang="fa" dir="rtl">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>پنل مدیریت دانش</title>
+<link rel="stylesheet" href="https://cdn.jsdelivr.net/gh/rastikerdar/vazirmatn@v33.003/Vazirmatn-font-face.css">
+<style>
+  :root {
+    --bg: #0d1117;
+    --bg-2: #161b22;
+    --bg-3: #21262d;
+    --border: #30363d;
+    --text: #e6edf3;
+    --muted: #8b949e;
+    --accent: #58a6ff;
+    --green: #3fb950;
+    --red: #f85149;
+    --yellow: #d29922;
+    --radius: 10px;
+  }
+  * { margin: 0; padding: 0; box-sizing: border-box; }
+  body {
+    font-family: 'Vazirmatn', system-ui, sans-serif;
+    background: var(--bg);
+    color: var(--text);
+    min-height: 100vh;
+    padding: 20px;
+  }
+  .container { max-width: 1100px; margin: 0 auto; }
+
+  /* ── هدر ── */
+  header {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    margin-bottom: 24px;
+    flex-wrap: wrap;
+    gap: 12px;
+  }
+  h1 { font-size: 24px; font-weight: 700; }
+  .badge {
+    background: var(--bg-3);
+    border: 1px solid var(--border);
+    padding: 4px 14px;
+    border-radius: 20px;
+    font-size: 13px;
+    color: var(--muted);
+  }
+  .badge.r2-on { color: var(--green); border-color: var(--green); }
+  .badge.r2-off { color: var(--yellow); border-color: var(--yellow); }
+
+  /* ── توکن ── */
+  .token-row {
+    display: flex;
+    gap: 8px;
+    margin-bottom: 20px;
+  }
+  input[type="password"], input[type="text"], textarea, select {
+    background: var(--bg-2);
+    border: 1px solid var(--border);
+    color: var(--text);
+    padding: 10px 14px;
+    border-radius: var(--radius);
+    font-family: inherit;
+    font-size: 14px;
+    outline: none;
+    transition: border-color 0.2s;
+  }
+  input:focus, textarea:focus, select:focus { border-color: var(--accent); }
+
+  /* ── تب‌ها ── */
+  .tabs {
+    display: flex;
+    gap: 6px;
+    margin-bottom: 20px;
+    flex-wrap: wrap;
+  }
+  .tab {
+    background: var(--bg-2);
+    border: 1px solid var(--border);
+    color: var(--muted);
+    padding: 10px 20px;
+    border-radius: var(--radius) var(--radius) 0 0;
+    cursor: pointer;
+    font-size: 14px;
+    font-family: inherit;
+    transition: all 0.2s;
+  }
+  .tab:hover { color: var(--text); }
+  .tab.active {
+    background: var(--bg-3);
+    color: var(--accent);
+    border-color: var(--accent);
+    border-bottom-color: var(--bg);
+  }
+  .panel {
+    background: var(--bg-2);
+    border: 1px solid var(--border);
+    border-radius: 0 var(--radius) var(--radius) var(--radius);
+    padding: 24px;
+    display: none;
+  }
+  .panel.active { display: block; }
+
+  /* ── فرم ── */
+  .form-group { margin-bottom: 16px; }
+  label { display: block; margin-bottom: 6px; font-size: 13px; color: var(--muted); }
+  textarea { width: 100%; min-height: 120px; resize: vertical; }
+  input[type="text"], input[type="url"] { width: 100%; }
+
+  /* ── دکمه‌ها ── */
+  .btn {
+    background: var(--accent);
+    color: #fff;
+    border: none;
+    padding: 10px 24px;
+    border-radius: var(--radius);
+    cursor: pointer;
+    font-family: inherit;
+    font-size: 14px;
+    transition: opacity 0.2s;
+  }
+  .btn:hover { opacity: 0.9; }
+  .btn:disabled { opacity: 0.5; cursor: not-allowed; }
+  .btn-danger {
+    background: transparent;
+    border: 1px solid var(--red);
+    color: var(--red);
+    padding: 6px 14px;
+    font-size: 12px;
+  }
+  .btn-danger:hover { background: var(--red); color: #fff; }
+
+  /* ── دراپ زون ── */
+  .dropzone {
+    border: 2px dashed var(--border);
+    border-radius: var(--radius);
+    padding: 40px 20px;
+    text-align: center;
+    cursor: pointer;
+    transition: all 0.2s;
+    color: var(--muted);
+  }
+  .dropzone:hover, .dropzone.dragging {
+    border-color: var(--accent);
+    color: var(--accent);
+    background: rgba(88, 166, 255, 0.05);
+  }
+  .dropzone .icon { font-size: 40px; margin-bottom: 8px; }
+  .file-info {
+    margin-top: 12px;
+    font-size: 13px;
+    color: var(--green);
+  }
+
+  /* ── جدول ── */
+  table {
+    width: 100%;
+    border-collapse: collapse;
+    font-size: 13px;
+  }
+  th, td {
+    padding: 10px 12px;
+    text-align: right;
+    border-bottom: 1px solid var(--border);
+  }
+  th { color: var(--muted); font-weight: 600; font-size: 12px; }
+  tr:hover td { background: var(--bg-3); }
+
+  /* ── استاتوس ── */
+  .status {
+    display: inline-block;
+    padding: 3px 10px;
+    border-radius: 12px;
+    font-size: 11px;
+    font-weight: 600;
+  }
+  .status.processing { background: rgba(210, 153, 34, 0.2); color: var(--yellow); }
+  .status.ready { background: rgba(63, 185, 80, 0.2); color: var(--green); }
+  .status.failed { background: rgba(248, 81, 73, 0.2); color: var(--red); }
+
+  .empty {
+    text-align: center;
+    color: var(--muted);
+    padding: 40px 20px;
+    font-size: 14px;
+  }
+  .toast {
+    position: fixed;
+    bottom: 24px;
+    left: 50%;
+    transform: translateX(-50%);
+    background: var(--bg-3);
+    border: 1px solid var(--border);
+    padding: 12px 24px;
+    border-radius: var(--radius);
+    font-size: 14px;
+    opacity: 0;
+    transition: opacity 0.3s;
+    pointer-events: none;
+    z-index: 100;
+  }
+  .toast.show { opacity: 1; }
+  .toast.success { border-color: var(--green); color: var(--green); }
+  .toast.error { border-color: var(--red); color: var(--red); }
+
+  .hint { font-size: 12px; color: var(--muted); margin-top: 8px; line-height: 1.6; }
+  .spinner {
+    display: inline-block;
+    width: 14px;
+    height: 14px;
+    border: 2px solid var(--border);
+    border-top-color: var(--accent);
+    border-radius: 50%;
+    animation: spin 0.8s linear infinite;
+    margin-left: 8px;
+  }
+  @keyframes spin { to { transform: rotate(360deg); } }
+
+  .rec-btn {
+    background: var(--bg-3);
+    border: 1px solid var(--border);
+    color: var(--text);
+    padding: 8px 16px;
+    border-radius: var(--radius);
+    cursor: pointer;
+    font-family: inherit;
+  }
+  .rec-btn.recording { border-color: var(--red); color: var(--red); }
+</style>
+</head>
+<body>
+<div class="container">
+  <header>
+    <h1>📚 پنل مدیریت دانش</h1>
+    <span class="badge" id="clientBadge">مشتری: default</span>
+    <span class="badge" id="r2Badge">در حال بررسی...</span>
+  </header>
+
+  <div class="token-row">
+    <input type="password" id="adminToken" placeholder="توکن ادمین" style="flex:1">
+    <button class="btn" onclick="saveToken()">ذخیره</button>
+  </div>
+
+  <!-- ── تب‌ها ── -->
+  <div class="tabs">
+    <button class="tab active" onclick="switchTab('upload')">📤 آپلود فایل</button>
+    <button class="tab" onclick="switchTab('url')">🔗 لینک</button>
+    <button class="tab" onclick="switchTab('text')">✏️ متن دستی</button>
+    <button class="tab" onclick="switchTab('voice')">🎙️ ورودی صوتی</button>
+    <button class="tab" onclick="switchTab('list')">📋 لیست اسناد</button>
+  </div>
+
+  <!-- ── پنل آپلود فایل ── -->
+  <div class="panel active" id="panel-upload">
+    <div class="dropzone" id="dropzone">
+      <div class="icon">📄</div>
+      <div>فایل خود را اینجا رها کنید یا کلیک کنید</div>
+      <div class="hint">
+        فرمت‌های پشتیبانی‌شده: PDF, DOCX, XLSX, CSV, TXT, MD, JPG, PNG, WEBP<br>
+        حداکثر حجم: ۲۵ مگابایت
+      </div>
+    </div>
+    <input type="file" id="fileInput" hidden>
+    <div class="file-info" id="fileInfo"></div>
+    <div style="margin-top:16px">
+      <label>دسته‌بندی (اختیاری)</label>
+      <input type="text" id="uploadCategory" placeholder="مثلاً: محصولات">
+    </div>
+    <button class="btn" id="uploadBtn" onclick="uploadFile()" disabled>آپلود و پردازش</button>
+    <div class="hint" id="uploadStatus"></div>
+  </div>
+
+  <!-- ── پنل لینک ── -->
+  <div class="panel" id="panel-url">
+    <div class="form-group">
+      <label>آدرس صفحه</label>
+      <input type="url" id="urlInput" placeholder="https://example.com/page">
+    </div>
+    <div class="form-group">
+      <label style="display:flex;align-items:center;gap:8px;cursor:pointer">
+        <input type="checkbox" id="crawlAll"> کل sitemap سایت را استخراج کن (تا ۲۰ صفحه)
+      </label>
+    </div>
+    <button class="btn" onclick="ingestUrl()">استخراج محتوا</button>
+    <div class="hint" id="urlStatus"></div>
+  </div>
+
+  <!-- ── پنل متن دستی ── -->
+  <div class="panel" id="panel-text">
+    <div class="form-group">
+      <label>عنوان</label>
+      <input type="text" id="textTitle" placeholder="عنوان سند">
+    </div>
+    <div class="form-group">
+      <label>محتوا</label>
+      <textarea id="textContent" placeholder="متن کامل را وارد کنید..."></textarea>
+    </div>
+    <button class="btn" onclick="ingestText()">ذخیره</button>
+    <div class="hint" id="textStatus"></div>
+  </div>
+
+  <!-- ── پنل ورودی صوتی ── -->
+  <div class="panel" id="panel-voice">
+    <div class="form-group">
+      <label>ضبط صدا</label>
+      <div style="display:flex;gap:8px;align-items:center">
+        <button class="rec-btn" id="recBtn" onclick="toggleRecording()">🎙️ شروع ضبط</button>
+        <span id="recStatus" style="font-size:13px;color:var(--muted)"></span>
+      </div>
+      <div class="hint">مرورگر شما باید از Web Speech API پشتیبانی کند (Chrome یا Edge)</div>
+    </div>
+    <div class="form-group">
+      <label>متن پیاده‌سازی شده</label>
+      <textarea id="voiceText" placeholder="متن گفتار شما اینجا ظاهر می‌شود..."></textarea>
+    </div>
+    <div class="form-group">
+      <label>عنوان</label>
+      <input type="text" id="voiceTitle" placeholder="عنوان سند">
+    </div>
+    <button class="btn" onclick="ingestVoice()">ذخیره متن</button>
+    <div class="hint" id="voiceStatus"></div>
+  </div>
+
+  <!-- ── پنل لیست اسناد ── -->
+  <div class="panel" id="panel-list">
+    <div style="display:flex;justify-content:space-between;margin-bottom:12px;align-items:center">
+      <span class="hint" id="listInfo"></span>
+      <button class="btn" style="padding:6px 16px;font-size:12px" onclick="loadDocuments()">↻ به‌روزرسانی</button>
+    </div>
+    <div style="overflow-x:auto">
+      <table>
+        <thead>
+          <tr>
+            <th>عنوان</th><th>نوع</th><th>وضعیت</th><th>تکه</th><th>R2</th><th>حجم</th><th>تاریخ</th><th>عملیات</th>
+          </tr>
+        </thead>
+        <tbody id="docsBody"></tbody>
+      </table>
+    </div>
+    <div class="empty" id="docsEmpty" style="display:none">هیچ سندی وجود ندارد. یکی آپلود کنید!</div>
+  </div>
+</div>
+
+<div class="toast" id="toast"></div>
+
+<script src="./config.js"></script>
+
+<script>
+// API_BASE از config.js خوانده می‌شود (آدرس Worker، نه origin صفحه)
+// روی GitHub Pages، window.location.origin آدرس خود GitHub Pages است،
+// نه بک‌اند — بنابراین نباید از آن استفاده کرد.
+let API_BASE;
+try {
+  API_BASE = window.APP_CONFIG?.API_BASE || window.API_BASE || window.location.origin;
+} catch {
+  API_BASE = window.location.origin;
+}
+let token = localStorage.getItem('admin_token') || '';
+let selectedFile = null;
+let recognition = null;
+let isRecording = false;
+
+// ═══════════════════════════════════════════════════════
+// مدیریت توکن
+// ═══════════════════════════════════════════════════════
+function saveToken() {
+  token = document.getElementById('adminToken').value;
+  localStorage.setItem('admin_token', token);
+  toast('توکن ذخیره شد', 'success');
+  loadDocuments();
+  checkR2();
+}
+
+function headers() {
+  return {
+    'Authorization': 'Bearer ' + token,
+    'Content-Type': 'application/json'
+  };
+}
+
+// ═══════════════════════════════════════════════════════
+// clientId پنل — از query param گرفته می‌شود
+// این اجازه می‌دهد پنل دانش برای مشتریان مختلف باز شود:
+//   admin-knowledge.html?client=client1
+// ═══════════════════════════════════════════════════════
+let CURRENT_CLIENT = (() => {
+  try {
+    const p = new URLSearchParams(window.location.search);
+    const raw = (p.get('client') || p.get('client_id') || 'default').toLowerCase().trim();
+    return /^[a-z0-9][a-z0-9-]{0,62}$/.test(raw) ? raw : 'default';
+  } catch { return 'default'; }
+})();
+
+// نمایش مشتری فعال در هدر
+document.addEventListener('DOMContentLoaded', () => {
+  const badge = document.getElementById('clientBadge');
+  if (badge) badge.textContent = 'مشتری: ' + CURRENT_CLIENT;
+});
+
+/**
+ * ساخت آدرس API با client_id.
+ * آدرس بک‌اند از config.js (APP_CONFIG.API_BASE) خوانده می‌شود.
+ */
+function apiPath(path) {
+  const sep = path.includes('?') ? '&' : '?';
+  return `${API_BASE}${path}${sep}client_id=${encodeURIComponent(CURRENT_CLIENT)}`;
+}
+
+/**
+ * fetch کمکی — Authorization و client_id را خودش اضافه می‌کند.
+ */
+async function apiFetch(path, options = {}) {
+  const isForm = options.body instanceof FormData;
+  const res = await fetch(apiPath(path), {
+    ...options,
+    headers: {
+      'Authorization': 'Bearer ' + token,
+      ...(isForm ? {} : { 'Content-Type': 'application/json' }),
+      ...(options.headers || {}),
+    },
+  });
+  return res;
+}
+
+function toast(msg, type = 'success') {
+  const t = document.getElementById('toast');
+  t.textContent = msg;
+  t.className = 'toast show ' + type;
+  setTimeout(() => t.className = 'toast', 3000);
+}
+
+function switchTab(name) {
+  document.querySelectorAll('.tab').forEach(t => t.classList.remove('active'));
+  document.querySelectorAll('.panel').forEach(p => p.classList.remove('active'));
+  const tabs = ['upload', 'url', 'text', 'voice', 'list'];
+  const idx = tabs.indexOf(name);
+  document.querySelectorAll('.tab')[idx].classList.add('active');
+  document.getElementById('panel-' + name).classList.add('active');
+  if (name === 'list') loadDocuments();
+}
+
+// ═══════════════════════════════════════════════════════
+// آپلود فایل
+// ═══════════════════════════════════════════════════════
+const dropzone = document.getElementById('dropzone');
+const fileInput = document.getElementById('fileInput');
+
+dropzone.addEventListener('click', () => fileInput.click());
+fileInput.addEventListener('change', (e) => {
+  if (e.target.files.length) selectFile(e.target.files[0]);
+});
+
+dropzone.addEventListener('dragover', (e) => {
+  e.preventDefault();
+  dropzone.classList.add('dragging');
+});
+dropzone.addEventListener('dragleave', () => dropzone.classList.remove('dragging'));
+dropzone.addEventListener('drop', (e) => {
+  e.preventDefault();
+  dropzone.classList.remove('dragging');
+  if (e.dataTransfer.files.length) selectFile(e.dataTransfer.files[0]);
+});
+
+function selectFile(file) {
+  selectedFile = file;
+  document.getElementById('fileInfo').textContent = `📎 ${file.name} (${(file.size / 1024 / 1024).toFixed(2)} MB)`;
+  document.getElementById('uploadBtn').disabled = false;
+}
+
+async function uploadFile() {
+  if (!selectedFile || !token) return;
+  const btn = document.getElementById('uploadBtn');
+  const status = document.getElementById('uploadStatus');
+
+  btn.disabled = true;
+  btn.innerHTML = 'در حال آپلود... <span class="spinner"></span>';
+
+  const formData = new FormData();
+  formData.append('file', selectedFile);
+  formData.append('category', document.getElementById('uploadCategory').value || 'general');
+
+  try {
+    const res = await apiFetch('/api/admin/knowledge/upload', {
+      method: 'POST',
+      body: formData
+    });
+    const data = await res.json();
+
+    if (!res.ok) throw new Error(data.error || 'خطا در آپلود');
+
+    status.textContent = '✅ پردازش در پس‌زمینه شروع شد. این کار ممکن است چند ثانیه طول بکشد. به تب «لیست اسناد» بروید.';
+    toast('فایل در حال پردازش است');
+    selectedFile = null;
+    document.getElementById('fileInfo').textContent = '';
+    btn.disabled = true;
+
+    // بررسی خودکار وضعیت
+    setTimeout(() => loadDocuments(), 5000);
+  } catch (e) {
+    status.textContent = '❌ ' + e.message;
+    toast(e.message, 'error');
+  } finally {
+    btn.innerHTML = 'آپلود و پردازش';
+    btn.disabled = !selectedFile;
+  }
+}
+
+// ═══════════════════════════════════════════════════════
+// استخراج از URL
+// ═══════════════════════════════════════════════════════
+async function ingestUrl() {
+  const url = document.getElementById('urlInput').value.trim();
+  const crawlAll = document.getElementById('crawlAll').checked;
+  const status = document.getElementById('urlStatus');
+
+  if (!url) { toast('آدرس را وارد کنید', 'error'); return; }
+
+  status.innerHTML = 'در حال استخراج... <span class="spinner"></span>';
+
+  try {
+    const res = await apiFetch('/api/admin/knowledge/ingest-url', {
+      method: 'POST',
+      body: JSON.stringify({ url, crawlAll })
+    });
+    const data = await res.json();
+    if (!res.ok) throw new Error(data.error);
+
+    status.textContent = '✅ ' + (data.message || 'در حال پردازش');
+    toast('استخراج شروع شد');
+    setTimeout(() => loadDocuments(), 8000);
+  } catch (e) {
+    status.textContent = '❌ ' + e.message;
+    toast(e.message, 'error');
+  }
+}
+
+// ═══════════════════════════════════════════════════════
+// متن دستی
+// ═══════════════════════════════════════════════════════
+async function ingestText() {
+  const title = document.getElementById('textTitle').value.trim();
+  const content = document.getElementById('textContent').value.trim();
+  const status = document.getElementById('textStatus');
+
+  if (!content || content.length < 10) { toast('محتوا باید حداقل ۱۰ کاراکتر باشد', 'error'); return; }
+
+  status.innerHTML = 'در حال ذخیره... <span class="spinner"></span>';
+
+  try {
+    const res = await apiFetch('/api/admin/knowledge/ingest-text', {
+      method: 'POST',
+      body: JSON.stringify({ title, content })
+    });
+    const data = await res.json();
+    if (!res.ok) throw new Error(data.error);
+
+    status.textContent = `✅ ${data.chunks} تکه با موفقیت ذخیره شد`;
+    toast(`ذخیره شد (${data.chunks} تکه)`);
+    document.getElementById('textContent').value = '';
+    setTimeout(() => loadDocuments(), 3000);
+  } catch (e) {
+    status.textContent = '❌ ' + e.message;
+    toast(e.message, 'error');
+  }
+}
+
+// ═══════════════════════════════════════════════════════
+// ورودی صوتی (Web Speech API)
+// ═══════════════════════════════════════════════════════
+function toggleRecording() {
+  const btn = document.getElementById('recBtn');
+
+  if (isRecording) {
+    recognition.stop();
+    return;
+  }
+
+  const SpeechRecognition = window.SpeechRecognition || window.webkitSpeechRecognition;
+  if (!SpeechRecognition) {
+    toast('مرورگر شما از ضبط صدا پشتیبانی نمی‌کند', 'error');
+    return;
+  }
+
+  recognition = new SpeechRecognition();
+  recognition.lang = 'fa-IR';
+  recognition.continuous = true;
+  recognition.interimResults = true;
+
+  recognition.onstart = () => {
+    isRecording = true;
+    btn.classList.add('recording');
+    btn.textContent = '⏹️ توقف ضبط';
+    document.getElementById('recStatus').textContent = 'در حال ضبط...';
+  };
+
+  recognition.onresult = (event) => {
+    let transcript = '';
+    for (let i = 0; i < event.results.length; i++) {
+      transcript += event.results[i][0].transcript + ' ';
+    }
+    document.getElementById('voiceText').value = transcript.trim();
+  };
+
+  recognition.onerror = (e) => {
+    toast('خطا در ضبط: ' + e.error, 'error');
+    isRecording = false;
+    btn.classList.remove('recording');
+    btn.textContent = '🎙️ شروع ضبط';
+  };
+
+  recognition.onend = () => {
+    isRecording = false;
+    btn.classList.remove('recording');
+    btn.textContent = '🎙️ شروع ضبط';
+    document.getElementById('recStatus').textContent = 'ضبط متوقف شد';
+  };
+
+  recognition.start();
+}
+
+async function ingestVoice() {
+  const content = document.getElementById('voiceText').value.trim();
+  const title = document.getElementById('voiceTitle').value.trim() || 'ورودی صوتی';
+  const status = document.getElementById('voiceStatus');
+
+  if (!content || content.length < 10) { toast('متنی برای ذخیره وجود ندارد', 'error'); return; }
+
+  status.innerHTML = 'در حال ذخیره... <span class="spinner"></span>';
+
+  try {
+    const res = await apiFetch('/api/admin/knowledge/ingest-text', {
+      method: 'POST',
+      body: JSON.stringify({ title, content })
+    });
+    const data = await res.json();
+    if (!res.ok) throw new Error(data.error);
+
+    status.textContent = `✅ ${data.chunks} تکه با موفقیت ذخیره شد`;
+    toast(`ذخیره شد (${data.chunks} تکه)`);
+    document.getElementById('voiceText').value = '';
+  } catch (e) {
+    status.textContent = '❌ ' + e.message;
+    toast(e.message, 'error');
+  }
+}
+
+// ═══════════════════════════════════════════════════════
+// لیست اسناد
+// ═══════════════════════════════════════════════════════
+function fmtSize(bytes) {
+  if (!bytes) return '-';
+  if (bytes < 1024) return bytes + ' B';
+  if (bytes < 1048576) return (bytes / 1024).toFixed(1) + ' KB';
+  return (bytes / 1048576).toFixed(2) + ' MB';
+}
+
+function fmtDate(ts) {
+  if (!ts) return '-';
+  const d = new Date(ts);
+  return d.toLocaleDateString('fa-IR', { month: 'short', day: 'numeric', hour: '2-digit', minute: '2-digit' });
+}
+
+const STATUS_LABELS = {
+  processing: '⏳ در حال پردازش',
+  ready: '✅ آماده',
+  failed: '❌ خطا'
+};
+
+async function loadDocuments() {
+  if (!token) return;
+  const tbody = document.getElementById('docsBody');
+  const empty = document.getElementById('docsEmpty');
+  const info = document.getElementById('listInfo');
+
+  tbody.innerHTML = '<tr><td colspan="8" style="text-align:center">در حال بارگذاری... <span class="spinner"></span></td></tr>';
+
+  try {
+    const res = await apiFetch('/api/admin/knowledge/documents?limit=100');
+    const data = await res.json();
+    if (!res.ok) throw new Error(data.error);
+
+    const docs = data.documents || [];
+    info.textContent = `${data.total} سند — R2: ${data.r2Enabled ? 'فعال' : 'غیرفعال'}`;
+
+    if (!docs.length) {
+      tbody.innerHTML = '';
+      empty.style.display = 'block';
+      return;
+    }
+    empty.style.display = 'none';
+
+    tbody.innerHTML = docs.map(d => `
+      <tr>
+        <td>${escapeHtml(d.title)}</td>
+        <td>${d.source_type === 'file' ? '📄 فایل' : d.source_type === 'url' ? '🔗 لینک' : '✏️ متن'}</td>
+        <td><span class="status ${d.status}">${STATUS_LABELS[d.status] || d.status}</span></td>
+        <td>${d.chunk_count || 0}</td>
+        <td>${d.r2_stored ? '✅' : '—'}</td>
+        <td>${fmtSize(d.file_size)}</td>
+        <td>${fmtDate(d.created_at)}</td>
+        <td>
+          <button class="btn-danger" onclick="deleteDocument('${d.id}')">حذف</button>
+        </td>
+      </tr>
+    `).join('');
+  } catch (e) {
+    tbody.innerHTML = '';
+    toast(e.message, 'error');
+  }
+}
+
+function escapeHtml(str) {
+  const div = document.createElement('div');
+  div.textContent = str || '';
+  return div.innerHTML;
+}
+
+async function deleteDocument(id) {
+  if (!confirm('این سند و همه تکه‌های آن حذف می‌شوند. مطمئن هستید؟')) return;
+
+  try {
+    const res = await apiFetch(`/api/admin/knowledge/documents/${id}`, {
+      method: 'DELETE',
+    });
+    const data = await res.json();
+    if (!res.ok) throw new Error(data.error);
+
+    toast('سند حذف شد');
+    loadDocuments();
+  } catch (e) {
+    toast(e.message, 'error');
+  }
+}
+
+// ═══════════════════════════════════════════════════════
+// بررسی وضعیت R2
+// ═══════════════════════════════════════════════════════
+async function checkR2() {
+  const badge = document.getElementById('r2Badge');
+  if (!token) {
+    badge.textContent = 'توکن ادمین را وارد کنید';
+    return;
+  }
+  try {
+    const res = await apiFetch('/api/admin/knowledge/documents?limit=1');
+    const data = await res.json();
+    if (data.r2Enabled) {
+      badge.textContent = '☁️ R2 فعال';
+      badge.className = 'badge r2-on';
+    } else {
+      badge.textContent = '☁️ R2 غیرفعال (فقط متن ذخیره می‌شود)';
+      badge.className = 'badge r2-off';
+    }
+  } catch {
+    badge.textContent = 'غیرقابل بررسی';
+  }
+}
+
+// ═══════════════════════════════════════════════════════
+// شروع
+// ═══════════════════════════════════════════════════════
+if (token) {
+  document.getElementById('adminToken').value = token;
+  loadDocuments();
+  checkR2();
+}
+</script>
+</body>
+</html>

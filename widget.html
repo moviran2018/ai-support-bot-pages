@@ -1,0 +1,298 @@
+<!DOCTYPE html>
+<html lang="fa" dir="rtl">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>دستیار پشتیبانی</title>
+  <style>
+    * { box-sizing: border-box; margin: 0; padding: 0; }
+    body { font-family: Tahoma, sans-serif; background: transparent; }
+    #chat-widget {
+      position: fixed; bottom: 20px; left: 20px;
+      width: 400px; height: 600px;
+      border-radius: 16px; box-shadow: 0 8px 32px rgba(0,0,0,0.15);
+      display: flex; flex-direction: column; overflow: hidden;
+      background: #fff; z-index: 9999;
+    }
+    .chat-header {
+      background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+      color: white; padding: 16px; font-weight: bold; font-size: 15px;
+      display: flex; justify-content: space-between; align-items: center;
+    }
+    .chat-messages { flex: 1; overflow-y: auto; padding: 16px; background: #f8f9fa; }
+    .message {
+      margin-bottom: 12px; max-width: 85%; padding: 10px 14px;
+      border-radius: 12px; font-size: 14px; line-height: 1.7;
+      word-wrap: break-word; white-space: pre-wrap;
+    }
+    .message.user { margin-right: auto; background: #667eea; color: white; border-bottom-right-radius: 4px; }
+    .message.bot { margin-left: auto; background: #e9ecef; color: #333; border-bottom-left-radius: 4px; }
+    .message.typing { color: #888; font-style: italic; }
+    .message img { max-width: 100%; border-radius: 8px; margin-top: 8px; }
+    .sources { font-size: 11px; color: #888; margin-top: 6px; padding-top: 6px; border-top: 1px dashed #ccc; }
+    .tool-calls { font-size: 11px; color: #16a34a; margin-top: 6px; padding: 6px 10px; background: #dcfce7; border-radius: 6px; }
+    .memory-badge { font-size: 11px; color: #7c3aed; margin-top: 4px; }
+    .chat-input {
+      padding: 12px; border-top: 1px solid #e9ecef; background: #fff;
+      display: flex; flex-direction: column; gap: 8px;
+    }
+    .input-row { display: flex; gap: 8px; align-items: center; }
+    .input-row input[type="text"] {
+      flex: 1; border: 1px solid #dee2e6; border-radius: 24px;
+      padding: 10px 16px; font-size: 14px; outline: none; font-family: inherit;
+    }
+    .icon-btn {
+      width: 40px; height: 40px; border: 1px solid #dee2e6; border-radius: 50%;
+      background: #fff; cursor: pointer; font-size: 18px; display: flex;
+      align-items: center; justify-content: center; transition: all 0.2s;
+    }
+    .icon-btn:hover { background: #f3f4f6; }
+    .icon-btn.recording { background: #ef4444; color: white; border-color: #ef4444; animation: pulse 1s infinite; }
+    @keyframes pulse { 0%, 100% { transform: scale(1); } 50% { transform: scale(1.1); } }
+    .send-btn {
+      padding: 10px 20px; border: none; border-radius: 24px;
+      background: #667eea; color: white; cursor: pointer;
+      font-weight: bold; font-family: inherit;
+    }
+    .send-btn:disabled { background: #ccc; cursor: not-allowed; }
+    .preview-area {
+      display: none; padding: 8px; background: #f3f4f6; border-radius: 8px;
+      margin-top: 4px; position: relative;
+    }
+    .preview-area img { max-height: 80px; border-radius: 6px; }
+    .preview-area audio { width: 100%; }
+    .preview-close {
+      position: absolute; top: 4px; left: 4px; width: 20px; height: 20px;
+      border-radius: 50%; background: #ef4444; color: white; border: none;
+      cursor: pointer; font-size: 12px;
+    }
+    .client-badge {
+      font-size: 10px; opacity: 0.75; background: rgba(255,255,255,0.2);
+      padding: 2px 8px; border-radius: 10px;
+    }
+  </style>
+</head>
+<body>
+  <div id="chat-widget">
+    <div class="chat-header">
+      <span>🤖 دستیار پشتیبانی هوشمند</span>
+      <span class="client-badge" id="clientBadge">default</span>
+    </div>
+    <div class="chat-messages" id="messages"></div>
+    <div class="chat-input">
+      <div class="preview-area" id="previewArea"></div>
+      <div class="input-row">
+        <button class="icon-btn" onclick="document.getElementById('imageInput').click()" title="ارسال عکس">🖼</button>
+        <input type="file" id="imageInput" accept="image/*" style="display:none;" onchange="handleImageSelect(event)" />
+        <button class="icon-btn" id="micBtn" onclick="toggleRecording()" title="پیام صوتی">🎤</button>
+        <input type="text" id="userInput" placeholder="سوال خود را بنویسید..." autocomplete="off" />
+        <button class="send-btn" id="sendBtn" onclick="sendMessage()">ارسال</button>
+      </div>
+    </div>
+  </div>
+
+  <script src="./config.js"></script>
+  <script>
+    // ═══ شناسه مشتری از query parameter ═══
+    const CLIENT_ID = window.getClientId();
+    const CHAT_URL = window.apiUrl('/api/chat');
+    // session_id برای هر مشتری جدا است
+    const sessionId = localStorage.getItem(`chatSession_${CLIENT_ID}`) || crypto.randomUUID();
+    localStorage.setItem(`chatSession_${CLIENT_ID}`, sessionId);
+
+    document.getElementById('clientBadge').textContent = CLIENT_ID;
+
+    const messagesDiv = document.getElementById('messages');
+    const input = document.getElementById('userInput');
+    const sendBtn = document.getElementById('sendBtn');
+    const previewArea = document.getElementById('previewArea');
+
+    let attachedImage = null;  // { base64, mime }
+    let attachedAudio = null;  // { base64, mime }
+    let mediaRecorder = null;
+    let audioChunks = [];
+
+    // ═══ نمایش پیام ═══
+    function addMessage(text, role, opts = {}) {
+      const div = document.createElement('div');
+      div.className = `message ${role}`;
+      div.textContent = text;
+      if (opts.imageUrl) {
+        const img = document.createElement('img');
+        img.src = opts.imageUrl;
+        div.appendChild(img);
+      }
+      if (opts.sources?.length > 0) {
+        const src = document.createElement('div');
+        src.className = 'sources';
+        src.textContent = '📚 ' + opts.sources.map((s) => s.title).join(' • ');
+        div.appendChild(src);
+      }
+      if (opts.toolCalls?.length > 0) {
+        const tc = document.createElement('div');
+        tc.className = 'tool-calls';
+        tc.textContent = '🛠 ' + opts.toolCalls.map((t) => t.name).join(' • ');
+        div.appendChild(tc);
+      }
+      if (opts.memoriesUsed > 0) {
+        const mb = document.createElement('div');
+        mb.className = 'memory-badge';
+        mb.textContent = `🧠 ${opts.memoriesUsed} خاطره مرتبط استفاده شد`;
+        div.appendChild(mb);
+      }
+      messagesDiv.appendChild(div);
+      messagesDiv.scrollTop = messagesDiv.scrollHeight;
+    }
+
+    // ═══ عکس ═══
+    function handleImageSelect(e) {
+      const file = e.target.files?.[0];
+      if (!file) return;
+      if (file.size > 5 * 1024 * 1024) {
+        alert('حجم تصویر باید کمتر از ۵ مگابایت باشد');
+        return;
+      }
+      const reader = new FileReader();
+      reader.onload = (ev) => {
+        const base64 = ev.target.result.split(',')[1];
+        attachedImage = { base64, mime: file.type };
+        showPreview('image', ev.target.result);
+      };
+      reader.readAsDataURL(file);
+      e.target.value = '';
+    }
+
+    // ═══ ضبط صدا ═══
+    async function toggleRecording() {
+      const micBtn = document.getElementById('micBtn');
+
+      if (mediaRecorder && mediaRecorder.state === 'recording') {
+        mediaRecorder.stop();
+        micBtn.classList.remove('recording');
+        return;
+      }
+
+      try {
+        const stream = await navigator.mediaDevices.getUserMedia({ audio: true });
+        mediaRecorder = new MediaRecorder(stream);
+        audioChunks = [];
+
+        mediaRecorder.ondataavailable = (e) => audioChunks.push(e.data);
+        mediaRecorder.onstop = async () => {
+          const blob = new Blob(audioChunks, { type: 'audio/webm' });
+          if (blob.size > 5 * 1024 * 1024) {
+            alert('حجم صدا باید کمتر از ۵ مگابایت باشد');
+            return;
+          }
+          const reader = new FileReader();
+          reader.onload = (ev) => {
+            const base64 = ev.target.result.split(',')[1];
+            attachedAudio = { base64, mime: 'audio/webm' };
+            showPreview('audio', ev.target.result);
+          };
+          reader.readAsDataURL(blob);
+          stream.getTracks().forEach((t) => t.stop());
+        };
+
+        mediaRecorder.start();
+        micBtn.classList.add('recording');
+
+        // حداکثر ۳۰ ثانیه
+        setTimeout(() => {
+          if (mediaRecorder?.state === 'recording') {
+            mediaRecorder.stop();
+            micBtn.classList.remove('recording');
+          }
+        }, 30000);
+      } catch (err) {
+        alert('دسترسی به میکروفون داده نشد');
+      }
+    }
+
+    // ═══ پیش‌نمایش ═══
+    function showPreview(type, dataUrl) {
+      previewArea.style.display = 'block';
+      if (type === 'image') {
+        previewArea.innerHTML = `
+          <button class="preview-close" onclick="clearPreview()">×</button>
+          <img src="${dataUrl}" />
+        `;
+      } else {
+        previewArea.innerHTML = `
+          <button class="preview-close" onclick="clearPreview()">×</button>
+          <audio controls src="${dataUrl}"></audio>
+        `;
+      }
+    }
+
+    function clearPreview() {
+      attachedImage = null;
+      attachedAudio = null;
+      previewArea.style.display = 'none';
+      previewArea.innerHTML = '';
+    }
+
+    // ═══ ارسال پیام ═══
+    async function sendMessage() {
+      const message = input.value.trim();
+      if (!message && !attachedImage && !attachedAudio) return;
+
+      // نمایش پیام کاربر
+      addMessage(message || (attachedImage ? '🖼 [تصویر]' : '🎤 [پیام صوتی]'), 'user', {
+        imageUrl: attachedImage ? `data:${attachedImage.mime};base64,${attachedImage.base64}` : null,
+      });
+
+      const payload = {
+        message,
+        sessionId,
+        imageBase64: attachedImage?.base64,
+        imageMime: attachedImage?.mime,
+        audioBase64: attachedAudio?.base64,
+      };
+
+      input.value = '';
+      clearPreview();
+      sendBtn.disabled = true;
+
+      const typing = document.createElement('div');
+      typing.className = 'message bot typing';
+      typing.textContent = 'در حال تایپ...';
+      messagesDiv.appendChild(typing);
+      messagesDiv.scrollTop = messagesDiv.scrollHeight;
+
+      try {
+        const res = await fetch(CHAT_URL, {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify(payload),
+        });
+        const data = await res.json();
+        typing.remove();
+
+        if (data.error) {
+          addMessage('⚠️ ' + data.error, 'bot');
+          return;
+        }
+
+        addMessage(data.reply, 'bot', {
+          sources: data.sources || [],
+          toolCalls: data.toolCalls || [],
+          memoriesUsed: data.memoriesUsed || 0,
+        });
+      } catch (e) {
+        typing.remove();
+        addMessage('خطا در ارتباط. لطفاً دوباره تلاش کنید.', 'bot');
+      } finally {
+        sendBtn.disabled = false;
+        input.focus();
+      }
+    }
+
+    input.addEventListener('keypress', (e) => {
+      if (e.key === 'Enter') sendMessage();
+    });
+
+    input.focus();
+  </script>
+</body>
+</html>

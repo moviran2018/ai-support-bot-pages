@@ -1,0 +1,1658 @@
+<!DOCTYPE html>
+<html lang="fa" dir="rtl">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>پنل مدیریت — دستیار پشتیبانی</title>
+<style>
+  :root {
+    --primary: #667eea;
+    --primary-dark: #5a6fd6;
+    --secondary: #764ba2;
+    --success: #22c55e;
+    --warning: #f59e0b;
+    --danger: #ef4444;
+    --bg: #f5f7fb;
+    --card: #ffffff;
+    --text: #1f2937;
+    --text-muted: #6b7280;
+    --border: #e5e7eb;
+    --sidebar-bg: linear-gradient(180deg, #667eea 0%, #764ba2 100%);
+  }
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+  body {
+    font-family: Tahoma, 'Segoe UI', sans-serif;
+    background: var(--bg); color: var(--text); direction: rtl;
+    min-height: 100vh;
+  }
+
+  /* ═══ صفحه ورود ═══ */
+  #login-screen {
+    position: fixed; inset: 0; display: flex;
+    align-items: center; justify-content: center;
+    background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+    z-index: 1000;
+  }
+  .login-card {
+    background: white; padding: 40px; border-radius: 20px;
+    box-shadow: 0 20px 60px rgba(0,0,0,0.3);
+    width: 420px; max-width: 90%;
+    text-align: center;
+  }
+  .login-card h1 { font-size: 24px; margin-bottom: 8px; color: var(--text); }
+  .login-card p { color: var(--text-muted); font-size: 14px; margin-bottom: 24px; }
+  .login-card input {
+    width: 100%; padding: 14px 16px; border: 2px solid var(--border);
+    border-radius: 12px; font-size: 14px; font-family: inherit;
+    margin-bottom: 16px; transition: border 0.2s;
+  }
+  .login-card input:focus { outline: none; border-color: var(--primary); }
+  .login-card button {
+    width: 100%; padding: 14px; background: var(--primary); color: white;
+    border: none; border-radius: 12px; font-size: 15px; font-weight: bold;
+    cursor: pointer; font-family: inherit; transition: background 0.2s;
+  }
+  .login-card button:hover { background: var(--primary-dark); }
+  .login-error {
+    color: var(--danger); font-size: 13px; margin-top: 12px; min-height: 18px;
+  }
+
+  /* ═══ اپ اصلی ═══ */
+  #app { display: none; min-height: 100vh; }
+  .layout { display: flex; min-height: 100vh; }
+
+  /* Sidebar */
+  .sidebar {
+    width: 260px; background: var(--sidebar-bg); color: white;
+    padding: 24px 0; display: flex; flex-direction: column;
+    position: fixed; top: 0; bottom: 0; right: 0; overflow-y: auto;
+  }
+  .sidebar-header {
+    padding: 0 24px 24px; border-bottom: 1px solid rgba(255,255,255,0.15);
+    margin-bottom: 16px;
+  }
+  .sidebar-header h2 { font-size: 18px; margin-bottom: 4px; }
+  .sidebar-header p { font-size: 12px; opacity: 0.8; }
+  .nav-item {
+    display: flex; align-items: center; gap: 12px;
+    padding: 14px 24px; cursor: pointer; font-size: 14px;
+    transition: background 0.2s; border: none; background: none;
+    color: white; width: 100%; text-align: right; font-family: inherit;
+  }
+  .nav-item:hover { background: rgba(255,255,255,0.1); }
+  .nav-item.active { background: rgba(255,255,255,0.18); font-weight: bold; }
+  .nav-item .icon { font-size: 18px; }
+  .sidebar-footer {
+    margin-top: auto; padding: 16px 24px;
+    border-top: 1px solid rgba(255,255,255,0.15); font-size: 12px;
+    opacity: 0.8;
+  }
+  .logout-btn {
+    display: flex; align-items: center; gap: 8px; padding: 10px 16px;
+    background: rgba(255,255,255,0.15); border: none; color: white;
+    border-radius: 8px; cursor: pointer; font-family: inherit;
+    font-size: 13px; margin-top: 12px; width: 100%;
+  }
+  .logout-btn:hover { background: rgba(255,255,255,0.25); }
+
+  /* Main */
+  .main {
+    flex: 1; margin-right: 260px; padding: 32px;
+    max-width: calc(100vw - 260px);
+  }
+  .page-header {
+    display: flex; justify-content: space-between; align-items: center;
+    margin-bottom: 28px; flex-wrap: wrap; gap: 16px;
+  }
+  .page-header h1 { font-size: 24px; }
+  .page-header p { color: var(--text-muted); font-size: 14px; margin-top: 4px; }
+
+  /* Tenant selector */
+  .tenant-bar {
+    background: var(--card); border-radius: 14px; padding: 14px 18px;
+    box-shadow: 0 1px 3px rgba(0,0,0,0.06); border: 1px solid var(--border);
+    margin-bottom: 24px; display: flex; align-items: center; gap: 14px;
+    flex-wrap: wrap;
+  }
+  .tenant-bar label { font-size: 13px; font-weight: bold; color: var(--text-muted); }
+  .tenant-bar select {
+    padding: 10px 14px; border: 1.5px solid var(--border); border-radius: 10px;
+    font-family: inherit; font-size: 14px; background: white; min-width: 220px;
+  }
+  .role-badge {
+    font-size: 11px; padding: 4px 12px; border-radius: 12px; font-weight: bold;
+  }
+  .role-super { background: #ede9fe; color: #5b21b6; }
+  .role-client { background: #dbeafe; color: #1e40af; }
+
+  /* Cards */
+  .stats-grid {
+    display: grid; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+    gap: 16px; margin-bottom: 24px;
+  }
+  .stat-card {
+    background: var(--card); border-radius: 16px; padding: 20px;
+    box-shadow: 0 1px 3px rgba(0,0,0,0.06); border: 1px solid var(--border);
+  }
+  .stat-card .label { font-size: 13px; color: var(--text-muted); margin-bottom: 8px; }
+  .stat-card .value { font-size: 28px; font-weight: bold; color: var(--text); }
+  .stat-card .icon { font-size: 24px; float: left; }
+
+  .card {
+    background: var(--card); border-radius: 16px; padding: 24px;
+    box-shadow: 0 1px 3px rgba(0,0,0,0.06); border: 1px solid var(--border);
+    margin-bottom: 20px;
+  }
+  .card h3 { font-size: 16px; margin-bottom: 16px; color: var(--text); }
+
+  /* Chart */
+  .chart-bars {
+    display: flex; align-items: flex-end; gap: 8px;
+    height: 180px; padding: 16px 0;
+  }
+  .chart-bar {
+    flex: 1; background: linear-gradient(180deg, var(--primary), var(--secondary));
+    border-radius: 6px 6px 0 0; min-height: 4px;
+    transition: all 0.3s; position: relative;
+  }
+  .chart-bar:hover { opacity: 0.8; }
+  .chart-bar-label {
+    position: absolute; bottom: -24px; left: 0; right: 0;
+    text-align: center; font-size: 11px; color: var(--text-muted);
+  }
+  .chart-bar-value {
+    position: absolute; top: -20px; left: 0; right: 0;
+    text-align: center; font-size: 11px; font-weight: bold;
+    color: var(--primary);
+  }
+
+  /* Table */
+  .table-wrap { overflow-x: auto; }
+  table { width: 100%; border-collapse: collapse; font-size: 13px; }
+  th, td { padding: 12px 14px; text-align: right; border-bottom: 1px solid var(--border); }
+  th {
+    background: #f9fafb; font-weight: bold; color: var(--text-muted);
+    font-size: 12px; text-transform: uppercase;
+  }
+  tr:hover { background: #fafbfc; }
+  .badge {
+    display: inline-block; padding: 4px 10px; border-radius: 12px;
+    font-size: 11px; font-weight: bold;
+  }
+  .badge-high { background: #dcfce7; color: #166534; }
+  .badge-medium { background: #fef3c7; color: #92400e; }
+  .badge-low { background: #fee2e2; color: #991b1b; }
+
+  /* Buttons */
+  .btn {
+    padding: 10px 18px; border-radius: 10px; border: none;
+    font-family: inherit; font-size: 13px; font-weight: bold;
+    cursor: pointer; transition: all 0.2s;
+  }
+  .btn-primary { background: var(--primary); color: white; }
+  .btn-primary:hover { background: var(--primary-dark); }
+  .btn-danger { background: var(--danger); color: white; }
+  .btn-danger:hover { opacity: 0.9; }
+  .btn-ghost {
+    background: transparent; color: var(--text-muted);
+    border: 1px solid var(--border);
+  }
+  .btn-ghost:hover { background: #f3f4f6; }
+  .btn-sm { padding: 6px 12px; font-size: 12px; }
+
+  /* Input */
+  .input, .textarea, .select {
+    width: 100%; padding: 12px 14px; border: 1.5px solid var(--border);
+    border-radius: 10px; font-family: inherit; font-size: 14px;
+    background: white; transition: border 0.2s;
+  }
+  .input:focus, .textarea:focus, .select:focus {
+    outline: none; border-color: var(--primary);
+  }
+  .textarea { min-height: 120px; resize: vertical; line-height: 1.7; }
+  .form-group { margin-bottom: 16px; }
+  .form-group label {
+    display: block; margin-bottom: 6px; font-size: 13px;
+    font-weight: bold; color: var(--text);
+  }
+
+  /* Pagination */
+  .pagination {
+    display: flex; justify-content: center; gap: 8px;
+    margin-top: 20px; flex-wrap: wrap;
+  }
+  .pagination button {
+    min-width: 36px; height: 36px; border-radius: 8px;
+    border: 1px solid var(--border); background: white;
+    cursor: pointer; font-family: inherit;
+  }
+  .pagination button.active {
+    background: var(--primary); color: white; border-color: var(--primary);
+  }
+  .pagination button:disabled { opacity: 0.4; cursor: not-allowed; }
+
+  /* Playground */
+  .playground-result {
+    margin-top: 20px; padding: 20px; background: #f9fafb;
+    border-radius: 12px; border: 1px solid var(--border);
+  }
+  .playground-reply {
+    font-size: 14px; line-height: 1.8; margin-bottom: 16px;
+    padding: 16px; background: white; border-radius: 10px;
+    border-right: 4px solid var(--primary);
+  }
+  .playground-source {
+    padding: 12px; background: white; border-radius: 8px;
+    margin-bottom: 8px; font-size: 12px;
+    border-right: 3px solid var(--success);
+  }
+  .playground-source-title {
+    font-weight: bold; margin-bottom: 4px; color: var(--text);
+  }
+  .playground-source-text {
+    color: var(--text-muted); line-height: 1.6;
+  }
+
+  /* Modal */
+  .modal-backdrop {
+    position: fixed; inset: 0; background: rgba(0,0,0,0.5);
+    display: flex; align-items: center; justify-content: center;
+    z-index: 999; padding: 20px;
+  }
+  .modal {
+    background: white; border-radius: 16px; padding: 28px;
+    max-width: 600px; width: 100%; max-height: 90vh; overflow-y: auto;
+  }
+  .modal h3 { margin-bottom: 16px; }
+  .modal-actions {
+    display: flex; gap: 12px; justify-content: flex-end; margin-top: 20px;
+  }
+
+  /* Toast */
+  .toast {
+    position: fixed; top: 24px; left: 50%; transform: translateX(-50%);
+    padding: 14px 24px; background: var(--text); color: white;
+    border-radius: 12px; font-size: 14px; z-index: 2000;
+    animation: slideDown 0.3s ease;
+  }
+  .toast.success { background: var(--success); }
+  .toast.error { background: var(--danger); }
+  @keyframes slideDown {
+    from { opacity: 0; transform: translateX(-50%) translateY(-20px); }
+    to { opacity: 1; transform: translateX(-50%) translateY(0); }
+  }
+
+  .empty-state {
+    text-align: center; padding: 60px 20px; color: var(--text-muted);
+  }
+  .empty-state .icon { font-size: 48px; margin-bottom: 16px; opacity: 0.4; }
+
+  .loading {
+    text-align: center; padding: 40px; color: var(--text-muted);
+  }
+
+  @media (max-width: 768px) {
+    .sidebar { width: 100%; position: relative; max-height: none; }
+    .main { margin-right: 0; max-width: 100%; padding: 20px; }
+    .layout { flex-direction: column; }
+  }
+</style>
+</head>
+<body>
+
+<!-- ═══ صفحه ورود ═══ -->
+<div id="login-screen">
+  <div class="login-card">
+    <h1>🔐 پنل مدیریت</h1>
+    <p>توکن ادمین را وارد کنید (سوپر ادمین یا ادمین مشتری)</p>
+    <input type="password" id="token-input" placeholder="ADMIN_TOKEN..." />
+    <button onclick="login()">ورود</button>
+    <div class="login-error" id="login-error"></div>
+  </div>
+</div>
+
+<!-- ═══ اپ اصلی ═══ -->
+<div id="app">
+  <div class="layout">
+    <aside class="sidebar">
+      <div class="sidebar-header">
+        <h2>🤖 دستیار هوشمند</h2>
+        <p>پنل مدیریت چندمستأجر</p>
+      </div>
+      <button class="nav-item" data-page="clients" id="nav-clients" style="display:none;">
+        <span class="icon">🏢</span> مدیریت مشتری‌ها
+      </button>
+      <button class="nav-item active" data-page="dashboard">
+        <span class="icon">📊</span> داشبورد
+      </button>
+      <button class="nav-item" data-page="documents">
+        <span class="icon">📚</span> اسناد
+      </button>
+      <button class="nav-item" data-page="conversations">
+        <span class="icon">💬</span> مکالمات
+      </button>
+      <button class="nav-item" data-page="leads">
+        <span class="icon">👥</span> سرنخ‌ها
+      </button>
+      <button class="nav-item" data-page="memories">
+        <span class="icon">🧠</span> حافظه کاربران
+      </button>
+      <button class="nav-item" data-page="tools">
+        <span class="icon">🛠</span> ابزارها
+      </button>
+      <button class="nav-item" data-page="media">
+        <span class="icon">🖼</span> فایل‌های رسانه
+      </button>
+      <button class="nav-item" data-page="playground">
+        <span class="icon">🧪</span> آزمایشگاه
+      </button>
+      <button class="nav-item" data-page="settings">
+        <span class="icon">⚙️</span> تنظیمات
+      </button>
+      <div class="sidebar-footer">
+        <div>نسخه ۲.۰ — چندمستأجر</div>
+        <button class="logout-btn" onclick="logout()">
+          <span>🚪</span> خروج
+        </button>
+      </div>
+    </aside>
+
+    <main class="main" id="main-content">
+      <div class="loading">در حال بارگذاری...</div>
+    </main>
+  </div>
+</div>
+
+<script src="./config.js"></script>
+<script>
+// ═══════════════════════════════════════════════════════
+// پیکربندی
+// ═══════════════════════════════════════════════════════
+const API_BASE = window.apiUrl('/api/admin');
+let TOKEN = sessionStorage.getItem('adminToken') || '';
+
+// وضعیت جاری کاربر
+let CURRENT_ROLE = null;      // 'super' | 'client'
+let CURRENT_CLIENT = null;    // clientId انتخاب‌شده
+let CLIENTS_LIST = [];        // فقط برای سوپر ادمین
+let ACTIVE_PAGE = 'dashboard';
+
+// ═══════════════════════════════════════════════════════
+// احراز هویت
+// ═══════════════════════════════════════════════════════
+async function login() {
+  const input = document.getElementById('token-input');
+  const err = document.getElementById('login-error');
+  const token = input.value.trim();
+
+  if (!token) {
+    err.textContent = 'لطفاً توکن را وارد کنید';
+    return;
+  }
+
+  try {
+    const res = await fetch(`${API_BASE}/me`, {
+      headers: { 'Authorization': `Bearer ${token}` },
+    });
+    if (res.ok) {
+      const data = await res.json();
+      TOKEN = token;
+      sessionStorage.setItem('adminToken', token);
+      CURRENT_ROLE = data.role;
+      CURRENT_CLIENT = data.clientId;
+      err.textContent = '';
+      await showApp();
+    } else {
+      const d = await res.json().catch(() => ({}));
+      err.textContent = d.error || 'توکن نامعتبر است';
+    }
+  } catch (e) {
+    err.textContent = 'خطا در ارتباط با سرور';
+  }
+}
+
+function logout() {
+  sessionStorage.removeItem('adminToken');
+  TOKEN = '';
+  CURRENT_ROLE = null;
+  CURRENT_CLIENT = null;
+  CLIENTS_LIST = [];
+  document.getElementById('app').style.display = 'none';
+  document.getElementById('login-screen').style.display = 'flex';
+}
+
+async function showApp() {
+  document.getElementById('login-screen').style.display = 'none';
+  document.getElementById('app').style.display = 'block';
+
+  // فقط سوپر ادمین منوی مدیریت مشتری‌ها را می‌بیند
+  document.getElementById('nav-clients').style.display =
+    CURRENT_ROLE === 'super' ? 'flex' : 'none';
+
+  // اگر سوپر ادمین است، لیست مشتری‌ها را بارگذاری کن
+  if (CURRENT_ROLE === 'super') {
+    try {
+      const data = await api('/clients');
+      CLIENTS_LIST = data.clients || [];
+      // اولین بار: روی مشتری پیش‌فرض
+      if (!CURRENT_CLIENT || !CLIENTS_LIST.some((c) => c.id === CURRENT_CLIENT)) {
+        CURRENT_CLIENT = 'default';
+      }
+    } catch (e) {
+      console.error('clients load failed', e);
+    }
+  }
+
+  navigate(ACTIVE_PAGE);
+}
+
+document.getElementById('token-input')?.addEventListener('keypress', (e) => {
+  if (e.key === 'Enter') login();
+});
+
+// ═══════════════════════════════════════════════════════
+// درخواست API — همیشه client_id را به عنوان query param می‌فرستد
+// (سرور برای ادمین مشتری نادیده می‌گیرد و از clientId خودش استفاده می‌کند)
+// ═══════════════════════════════════════════════════════
+async function api(path, options = {}) {
+  const sep = path.includes('?') ? '&' : '?';
+  const url = `${API_BASE}${path}${sep}client_id=${encodeURIComponent(CURRENT_CLIENT || 'default')}`;
+
+  const res = await fetch(url, {
+    ...options,
+    headers: {
+      'Authorization': `Bearer ${TOKEN}`,
+      'Content-Type': 'application/json',
+      ...(options.headers || {}),
+    },
+  });
+
+  if (res.status === 401) {
+    logout();
+    throw new Error('Unauthorized');
+  }
+  if (!res.ok) {
+    const err = await res.json().catch(() => ({}));
+    throw new Error(err.error || 'خطای ناشناخته');
+  }
+  return res.json();
+}
+
+// ═══════════════════════════════════════════════════════
+// نوار انتخاب مشتری (فقط سوپر ادمین)
+// ═══════════════════════════════════════════════════════
+function renderTenantBar() {
+  if (CURRENT_ROLE !== 'super') {
+    return `<div class="tenant-bar">
+      <label>👤 مشتری:</label>
+      <strong>${escapeHtml(CURRENT_CLIENT)}</strong>
+      <span class="role-badge role-client">ادمین مشتری</span>
+    </div>`;
+  }
+
+  return `<div class="tenant-bar">
+    <label>🏢 مشتری فعال:</label>
+    <select id="tenantSelect" onchange="switchTenant(this.value)">
+      ${CLIENTS_LIST.map((c) => `
+        <option value="${c.id}" ${c.id === CURRENT_CLIENT ? 'selected' : ''}>
+          ${escapeHtml(c.name)} (${escapeHtml(c.id)}) — ${c.status === 'active' ? 'فعال' : 'معلق'}
+        </option>
+      `).join('')}
+    </select>
+    <span class="role-badge role-super">سوپر ادمین</span>
+    <button class="btn btn-sm btn-primary" onclick="openClientModal()" style="margin-right:auto;">
+      ➕ مشتری جدید
+    </button>
+  </div>`;
+}
+
+async function switchTenant(clientId) {
+  CURRENT_CLIENT = clientId;
+  sessionStorage.setItem('activeClient', clientId);
+  navigate(ACTIVE_PAGE);
+}
+
+function openClientModal() {
+  const modal = document.createElement('div');
+  modal.className = 'modal-backdrop';
+  modal.innerHTML = `
+    <div class="modal">
+      <h3>🏢 افزودن مشتری جدید</h3>
+      <div class="form-group">
+        <label>شناسه (زیردامنه) — حروف کوچک، اعداد، خط تیره</label>
+        <input class="input" id="nc-id" placeholder="مثال: client1" />
+      </div>
+      <div class="form-group">
+        <label>نام نمایشی</label>
+        <input class="input" id="nc-name" placeholder="مثال: شرکت پارسه" />
+      </div>
+      <div class="form-group">
+        <label>توکن ادمین مشتری (اختیاری)</label>
+        <input class="input" id="nc-token" placeholder="یک رمز قوی" />
+      </div>
+      <div class="modal-actions">
+        <button class="btn btn-ghost" onclick="this.closest('.modal-backdrop').remove()">لغو</button>
+        <button class="btn btn-primary" onclick="submitNewClient()">افزودن</button>
+      </div>
+    </div>
+  `;
+  document.body.appendChild(modal);
+}
+
+async function submitNewClient() {
+  const id = document.getElementById('nc-id').value.trim().toLowerCase();
+  const name = document.getElementById('nc-name').value.trim();
+  const admin_token = document.getElementById('nc-token').value.trim();
+
+  if (!/^[a-z0-9][a-z0-9-]{0,62}$/.test(id)) {
+    return toast('شناسه نامعتبر است', 'error');
+  }
+
+  try {
+    await api('/clients', {
+      method: 'POST',
+      body: JSON.stringify({ id, name, admin_token: admin_token || null }),
+    });
+    toast(`✅ مشتری «${id}» افزوده شد`, 'success');
+    document.querySelector('.modal-backdrop')?.remove();
+    // رفرش لیست
+    const data = await api('/clients');
+    CLIENTS_LIST = data.clients || [];
+    CURRENT_CLIENT = id;
+    sessionStorage.setItem('activeClient', id);
+    navigate('clients');
+  } catch (err) {
+    toast('خطا: ' + err.message, 'error');
+  }
+}
+
+// ═══════════════════════════════════════════════════════
+// روتر
+// ═══════════════════════════════════════════════════════
+document.querySelectorAll('.nav-item').forEach((btn) => {
+  btn.addEventListener('click', () => navigate(btn.dataset.page));
+});
+
+function navigate(page) {
+  ACTIVE_PAGE = page;
+  document.querySelectorAll('.nav-item').forEach((b) => {
+    b.classList.toggle('active', b.dataset.page === page);
+  });
+
+  const pages = {
+    clients: renderClients,
+    dashboard: renderDashboard,
+    documents: renderDocuments,
+    conversations: renderConversations,
+    leads: renderLeads,
+    memories: renderMemories,
+    tools: renderTools,
+    media: renderMedia,
+    playground: renderPlayground,
+    settings: renderSettings,
+  };
+
+  document.getElementById('main-content').innerHTML = '<div class="loading">در حال بارگذاری...</div>';
+  pages[page]();
+}
+
+function toast(msg, type = '') {
+  const t = document.createElement('div');
+  t.className = `toast ${type}`;
+  t.textContent = msg;
+  document.body.appendChild(t);
+  setTimeout(() => t.remove(), 3000);
+}
+
+function escapeHtml(str) {
+  return String(str ?? '').replace(/[&<>"']/g, (c) =>
+    ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c])
+  );
+}
+
+function formatDate(ts) {
+  return new Date(ts).toLocaleString('fa-IR');
+}
+
+// ═══════════════════════════════════════════════════════
+// صفحه: مدیریت مشتری‌ها (فقط سوپر ادمین)
+// ═══════════════════════════════════════════════════════
+async function renderClients() {
+  const main = document.getElementById('main-content');
+  if (CURRENT_ROLE !== 'super') {
+    main.innerHTML = `<div class="empty-state"><div class="icon">🔒</div>دسترسی فقط برای سوپر ادمین</div>`;
+    return;
+  }
+
+  try {
+    const data = await api('/clients');
+    CLIENTS_LIST = data.clients || [];
+
+    main.innerHTML = `
+      ${renderTenantBar()}
+      <div class="page-header">
+        <div>
+          <h1>🏢 مدیریت مشتری‌ها</h1>
+          <p>${CLIENTS_LIST.length} مشتری ثبت شده</p>
+        </div>
+        <button class="btn btn-primary" onclick="openClientModal()">➕ مشتری جدید</button>
+      </div>
+
+      <div class="card">
+        <div class="table-wrap">
+          <table>
+            <thead>
+              <tr>
+                <th>شناسه / زیردامنه</th>
+                <th>نام</th>
+                <th>وضعیت</th>
+                <th>توکن ادمین</th>
+                <th>اسناد</th>
+                <th>مکالمات</th>
+                <th>سرنخ‌ها</th>
+                <th>تاریخ</th>
+                <th>عملیات</th>
+              </tr>
+            </thead>
+            <tbody>
+              ${CLIENTS_LIST.map((c) => `
+                <tr>
+                  <td><strong>${escapeHtml(c.id)}</strong></td>
+                  <td>${escapeHtml(c.name)}</td>
+                  <td>
+                    <span class="badge badge-${c.status === 'active' ? 'high' : 'low'}">
+                      ${c.status === 'active' ? 'فعال' : 'معلق'}
+                    </span>
+                  </td>
+                  <td>${c.hasAdminToken ? '✅ دارد' : '❌ ندارد'}</td>
+                  <td>${c.stats?.documents || 0}</td>
+                  <td>${c.stats?.conversations || 0}</td>
+                  <td>${c.stats?.leads || 0}</td>
+                  <td style="font-size:12px; color:var(--text-muted);">${formatDate(c.created_at)}</td>
+                  <td>
+                    ${c.id === 'default' ? '' : `
+                      <button class="btn btn-sm btn-ghost" onclick="toggleClientStatus('${c.id}', '${c.status}')">
+                        ${c.status === 'active' ? '🔒 تعلیق' : '🔓 فعال'}
+                      </button>
+                      <button class="btn btn-sm btn-danger" onclick="deleteClient('${c.id}', '${escapeHtml(c.name)}')">🗑</button>
+                    `}
+                  </td>
+                </tr>
+              `).join('')}
+            </tbody>
+          </table>
+        </div>
+      </div>
+    `;
+  } catch (err) {
+    main.innerHTML = `<div class="empty-state"><div class="icon">⚠️</div>${err.message}</div>`;
+  }
+}
+
+async function toggleClientStatus(id, status) {
+  const newStatus = status === 'active' ? 'suspended' : 'active';
+  try {
+    await api(`/clients/${id}`, {
+      method: 'PUT',
+      body: JSON.stringify({ status: newStatus }),
+    });
+    toast(`✅ وضعیت به «${newStatus === 'active' ? 'فعال' : 'معلق'}» تغییر کرد`, 'success');
+    renderClients();
+  } catch (err) {
+    toast('خطا: ' + err.message, 'error');
+  }
+}
+
+async function deleteClient(id, name) {
+  if (!confirm(`آیا از حذف مشتری «${name}» و تمام داده‌هایش مطمئن هستید؟`)) return;
+  try {
+    await api(`/clients/${id}`, { method: 'DELETE' });
+    toast('✅ مشتری حذف شد', 'success');
+    if (CURRENT_CLIENT === id) CURRENT_CLIENT = 'default';
+    renderClients();
+  } catch (err) {
+    toast('خطا: ' + err.message, 'error');
+  }
+}
+
+// ═══════════════════════════════════════════════════════
+// صفحه: داشبورد
+// ═══════════════════════════════════════════════════════
+async function renderDashboard() {
+  const main = document.getElementById('main-content');
+  try {
+    const data = await api('/stats');
+    const maxDaily = Math.max(...data.daily.map((d) => d.count), 1);
+
+    main.innerHTML = `
+      ${renderTenantBar()}
+      <div class="page-header">
+        <div>
+          <h1>📊 داشبورد</h1>
+          <p>${escapeHtml(data.client?.name || CURRENT_CLIENT)} — ${escapeHtml(CURRENT_CLIENT)}</p>
+        </div>
+        <button class="btn btn-ghost" onclick="navigate('dashboard')">🔄 بروزرسانی</button>
+      </div>
+
+      <div class="stats-grid">
+        <div class="stat-card">
+          <div class="icon">📚</div>
+          <div class="label">اسناد</div>
+          <div class="value">${data.totals.documents}</div>
+        </div>
+        <div class="stat-card">
+          <div class="icon">💬</div>
+          <div class="label">کل مکالمات</div>
+          <div class="value">${data.totals.conversations}</div>
+        </div>
+        <div class="stat-card">
+          <div class="icon">👥</div>
+          <div class="label">سرنخ‌ها</div>
+          <div class="value">${data.totals.leads}</div>
+        </div>
+        <div class="stat-card">
+          <div class="icon">📅</div>
+          <div class="label">امروز</div>
+          <div class="value">${data.totals.today}</div>
+        </div>
+        <div class="stat-card">
+          <div class="icon">📈</div>
+          <div class="label">این هفته</div>
+          <div class="value">${data.totals.week}</div>
+        </div>
+        <div class="stat-card">
+          <div class="icon">🧠</div>
+          <div class="label">خاطرات</div>
+          <div class="value">${data.totals.memories || 0}</div>
+        </div>
+        <div class="stat-card">
+          <div class="icon">🛠</div>
+          <div class="label">اجرای ابزارها</div>
+          <div class="value">${data.totals.toolExecutions || 0}</div>
+        </div>
+        <div class="stat-card">
+          <div class="icon">🖼</div>
+          <div class="label">فایل‌های رسانه</div>
+          <div class="value">${data.totals.mediaFiles || 0}</div>
+        </div>
+      </div>
+
+      <div class="card">
+        <h3>مکالمات ۷ روز اخیر</h3>
+        <div class="chart-bars">
+          ${data.daily.map((d, i) => {
+            const h = (d.count / maxDaily) * 100;
+            return `
+              <div class="chart-bar" style="height: ${Math.max(h, 3)}%">
+                <div class="chart-bar-value">${d.count}</div>
+                <div class="chart-bar-label">${6 - i} روز پیش</div>
+              </div>
+            `;
+          }).join('')}
+        </div>
+      </div>
+
+      <div class="card">
+        <h3>توزیع اطمینان پاسخ‌ها</h3>
+        ${data.confidenceDistribution.map((c) => `
+          <div style="display:flex; align-items:center; gap:12px; margin-bottom:12px;">
+            <span class="badge badge-${c.confidence}">${c.confidence}</span>
+            <div style="flex:1; height:8px; background:#f3f4f6; border-radius:4px; overflow:hidden;">
+              <div style="height:100%; width:${data.totals.conversations ? (c.count / data.totals.conversations * 100) : 0}%;
+                          background: var(--${c.confidence === 'high' ? 'success' : c.confidence === 'medium' ? 'warning' : 'danger'});"></div>
+            </div>
+            <span style="font-size:13px; color: var(--text-muted);">${c.count}</span>
+          </div>
+        `).join('') || '<div class="empty-state">هنوز مکالمه‌ای ثبت نشده</div>'}
+      </div>
+    `;
+  } catch (err) {
+    main.innerHTML = `<div class="empty-state"><div class="icon">⚠️</div>${err.message}</div>`;
+  }
+}
+
+// ═══════════════════════════════════════════════════════
+// صفحه: اسناد
+// ═══════════════════════════════════════════════════════
+async function renderDocuments(page = 1, search = '') {
+  const main = document.getElementById('main-content');
+  try {
+    const data = await api(`/documents?page=${page}&limit=20&search=${encodeURIComponent(search)}`);
+
+    main.innerHTML = `
+      ${renderTenantBar()}
+      <div class="page-header">
+        <div>
+          <h1>📚 مدیریت اسناد</h1>
+          <p>${data.pagination.total} سند در دانش‌نامه</p>
+        </div>
+        <button class="btn btn-primary" onclick="openUploadModal()">➕ آپلود سند جدید</button>
+      </div>
+
+      <div class="card">
+        <input class="input" id="docSearch" placeholder="🔍 جستجو در عنوان و محتوا..."
+               value="${escapeHtml(search)}" style="margin-bottom:16px;" />
+      </div>
+
+      <div class="card">
+        <div class="table-wrap">
+          <table>
+            <thead>
+              <tr>
+                <th>عنوان</th>
+                <th>تکه‌ها</th>
+                <th>حجم</th>
+                <th>تاریخ</th>
+                <th>عملیات</th>
+              </tr>
+            </thead>
+            <tbody>
+              ${data.documents.length === 0 ? `
+                <tr><td colspan="5"><div class="empty-state">
+                  <div class="icon">📭</div>
+                  سندی یافت نشد
+                </div></td></tr>
+              ` : data.documents.map((doc) => `
+                <tr>
+                  <td><strong>${escapeHtml(doc.title)}</strong></td>
+                  <td>${doc.chunk_count} تکه</td>
+                  <td>${Math.round(doc.size / 1024)} KB</td>
+                  <td style="font-size:12px; color:var(--text-muted);">${formatDate(doc.created_at)}</td>
+                  <td>
+                    <button class="btn btn-sm btn-ghost" onclick="viewDocument('${doc.id}')">👁</button>
+                    <button class="btn btn-sm btn-danger" onclick="deleteDocument('${doc.id}', '${escapeHtml(doc.title)}')">🗑</button>
+                  </td>
+                </tr>
+              `).join('')}
+            </tbody>
+          </table>
+        </div>
+
+        ${data.pagination.totalPages > 1 ? `
+          <div class="pagination">
+            ${Array.from({ length: data.pagination.totalPages }, (_, i) => i + 1)
+              .filter((p) => p === 1 || p === data.pagination.totalPages || Math.abs(p - page) <= 2)
+              .map((p, i, arr) => {
+                const prev = arr[i - 1];
+                const sep = prev && p - prev > 1 ? '<span style="padding:8px;">...</span>' : '';
+                return `${sep}<button class="${p === page ? 'active' : ''}"
+                  onclick="renderDocuments(${p}, '${escapeHtml(search)}')">${p}</button>`;
+              }).join('')}
+          </div>
+        ` : ''}
+      </div>
+    `;
+
+    const searchInput = document.getElementById('docSearch');
+    let searchTimer;
+    searchInput.addEventListener('input', (e) => {
+      clearTimeout(searchTimer);
+      searchTimer = setTimeout(() => renderDocuments(1, e.target.value), 400);
+    });
+  } catch (err) {
+    main.innerHTML = `<div class="empty-state"><div class="icon">⚠️</div>${err.message}</div>`;
+  }
+}
+
+function openUploadModal() {
+  const modal = document.createElement('div');
+  modal.className = 'modal-backdrop';
+  modal.innerHTML = `
+    <div class="modal">
+      <h3>➕ آپلود سند جدید</h3>
+      <div style="font-size:12px; color:var(--text-muted); margin-bottom:16px;">
+        این سند به مشتری <strong>${escapeHtml(CURRENT_CLIENT)}</strong> اضافه می‌شود.
+      </div>
+      <div class="form-group">
+        <label>عنوان سند</label>
+        <input class="input" id="upload-title" placeholder="مثال: سوالات متداول" />
+      </div>
+      <div class="form-group">
+        <label>محتوا</label>
+        <textarea class="textarea" id="upload-content" placeholder="متن کامل سند را اینجا بچسبانید..."></textarea>
+      </div>
+      <div class="modal-actions">
+        <button class="btn btn-ghost" onclick="this.closest('.modal-backdrop').remove()">لغو</button>
+        <button class="btn btn-primary" onclick="submitUpload()">آپلود</button>
+      </div>
+    </div>
+  `;
+  document.body.appendChild(modal);
+}
+
+async function submitUpload() {
+  const title = document.getElementById('upload-title').value.trim();
+  const content = document.getElementById('upload-content').value.trim();
+
+  if (!content) return toast('محتوا الزامی است', 'error');
+
+  try {
+    toast('در حال پردازش...', '');
+    const res = await fetch(window.apiUrl('/api/ingest', CURRENT_CLIENT), {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ title, content }),
+    });
+    const data = await res.json();
+    if (!res.ok) throw new Error(data.error);
+    toast(`✅ ${data.chunksProcessed} تکه ذخیره شد`, 'success');
+    document.querySelector('.modal-backdrop')?.remove();
+    renderDocuments();
+  } catch (err) {
+    toast('خطا: ' + err.message, 'error');
+  }
+}
+
+async function deleteDocument(id, title) {
+  if (!confirm(`آیا از حذف سند "${title}" مطمئن هستید؟`)) return;
+  try {
+    await api(`/documents/${id}`, { method: 'DELETE' });
+    toast('✅ سند حذف شد', 'success');
+    renderDocuments();
+  } catch (err) {
+    toast('خطا: ' + err.message, 'error');
+  }
+}
+
+async function viewDocument(id) {
+  try {
+    const data = await api(`/documents/${id}`);
+    const doc = data.document;
+    const modal = document.createElement('div');
+    modal.className = 'modal-backdrop';
+    modal.innerHTML = `
+      <div class="modal">
+        <h3>📄 ${escapeHtml(doc.title)}</h3>
+        <div style="background:#f9fafb; padding:16px; border-radius:12px;
+                    max-height:50vh; overflow-y:auto; white-space:pre-wrap;
+                    line-height:1.8; font-size:13px;">${escapeHtml(doc.content)}</div>
+        <div class="modal-actions">
+          <button class="btn btn-ghost" onclick="this.closest('.modal-backdrop').remove()">بستن</button>
+        </div>
+      </div>
+    `;
+    document.body.appendChild(modal);
+  } catch (err) {
+    toast(err.message, 'error');
+  }
+}
+
+// ═══════════════════════════════════════════════════════
+// صفحه: مکالمات
+// ═══════════════════════════════════════════════════════
+async function renderConversations(page = 1, filters = {}) {
+  const main = document.getElementById('main-content');
+  const params = new URLSearchParams({ page, limit: 30, ...filters });
+  try {
+    const data = await api(`/conversations?${params}`);
+
+    main.innerHTML = `
+      ${renderTenantBar()}
+      <div class="page-header">
+        <div>
+          <h1>💬 مکالمات</h1>
+          <p>${data.pagination.total} مکالمه ثبت شده</p>
+        </div>
+        <button class="btn btn-primary" onclick="exportCSV()">📥 خروجی CSV</button>
+      </div>
+
+      <div class="card">
+        <div style="display:grid; grid-template-columns: 2fr 1fr; gap:12px;">
+          <input class="input" id="convSessionFilter" placeholder="🔍 جستجو بر اساس Session ID..."
+                 value="${escapeHtml(filters.sessionId || '')}" />
+          <select class="select" id="convConfFilter">
+            <option value="">همه سطوح اطمینان</option>
+            <option value="high" ${filters.confidence === 'high' ? 'selected' : ''}>بالا</option>
+            <option value="medium" ${filters.confidence === 'medium' ? 'selected' : ''}>متوسط</option>
+            <option value="low" ${filters.confidence === 'low' ? 'selected' : ''}>پایین</option>
+          </select>
+        </div>
+      </div>
+
+      <div class="card">
+        <div class="table-wrap">
+          <table>
+            <thead>
+              <tr>
+                <th>Session</th>
+                <th>سوال کاربر</th>
+                <th>پاسخ ربات</th>
+                <th>اطمینان</th>
+                <th>تاریخ</th>
+                <th></th>
+              </tr>
+            </thead>
+            <tbody>
+              ${data.conversations.length === 0 ? `
+                <tr><td colspan="6"><div class="empty-state">
+                  <div class="icon">📭</div>مکالمه‌ای یافت نشد
+                </div></td></tr>
+              ` : data.conversations.map((c) => `
+                <tr>
+                  <td style="font-size:11px; color:var(--text-muted);">${escapeHtml(c.session_id.slice(0, 8))}...</td>
+                  <td style="max-width:250px; overflow:hidden; text-overflow:ellipsis; white-space:nowrap;">
+                    ${escapeHtml(c.user_message)}
+                  </td>
+                  <td style="max-width:300px; overflow:hidden; text-overflow:ellipsis; white-space:nowrap;">
+                    ${escapeHtml(c.bot_reply)}
+                  </td>
+                  <td><span class="badge badge-${c.confidence}">${c.confidence}</span></td>
+                  <td style="font-size:12px; color:var(--text-muted);">${formatDate(c.created_at)}</td>
+                  <td>
+                    <button class="btn btn-sm btn-ghost" onclick='viewConversation(${JSON.stringify(c).replace(/'/g, "&#39;")})'>👁</button>
+                    <button class="btn btn-sm btn-danger" onclick="deleteConversation('${c.id}')">🗑</button>
+                  </td>
+                </tr>
+              `).join('')}
+            </tbody>
+          </table>
+        </div>
+
+        ${data.pagination.totalPages > 1 ? `
+          <div class="pagination">
+            ${Array.from({ length: Math.min(data.pagination.totalPages, 10) }, (_, i) => i + 1)
+              .map((p) => `<button class="${p === page ? 'active' : ''}"
+                onclick='renderConversations(${p}, ${JSON.stringify(filters)})'>${p}</button>`).join('')}
+          </div>
+        ` : ''}
+      </div>
+    `;
+
+    document.getElementById('convSessionFilter')?.addEventListener('input', debounce((e) => {
+      renderConversations(1, { ...filters, sessionId: e.target.value });
+    }, 500));
+    document.getElementById('convConfFilter')?.addEventListener('change', (e) => {
+      renderConversations(1, { ...filters, confidence: e.target.value });
+    });
+  } catch (err) {
+    main.innerHTML = `<div class="empty-state"><div class="icon">⚠️</div>${err.message}</div>`;
+  }
+}
+
+function debounce(fn, ms) {
+  let t;
+  return (...args) => { clearTimeout(t); t = setTimeout(() => fn(...args), ms); };
+}
+
+function viewConversation(c) {
+  const sources = JSON.parse(c.sources || '[]');
+  const modal = document.createElement('div');
+  modal.className = 'modal-backdrop';
+  modal.innerHTML = `
+    <div class="modal">
+      <h3>💬 جزئیات مکالمه</h3>
+      <div style="margin-bottom:16px;">
+        <label style="font-size:12px; color:var(--text-muted);">سوال کاربر</label>
+        <div style="background:#f9fafb; padding:14px; border-radius:10px; margin-top:6px; line-height:1.7;">
+          ${escapeHtml(c.user_message)}
+        </div>
+      </div>
+      <div style="margin-bottom:16px;">
+        <label style="font-size:12px; color:var(--text-muted);">پاسخ ربات</label>
+        <div style="background:#eff6ff; padding:14px; border-radius:10px; margin-top:6px;
+                    line-height:1.7; border-right:3px solid var(--primary);">
+          ${escapeHtml(c.bot_reply)}
+        </div>
+      </div>
+      ${sources.length > 0 ? `
+        <div style="margin-bottom:16px;">
+          <label style="font-size:12px; color:var(--text-muted);">منابع استفاده شده</label>
+          ${sources.map((s) => `
+            <div style="background:#f0fdf4; padding:12px; border-radius:8px;
+                        margin-top:6px; font-size:12px; border-right:3px solid var(--success);">
+              <strong>${escapeHtml(s.title)}</strong>
+              ${s.score ? `<span style="color:var(--text-muted);"> (امتیاز: ${s.score})</span>` : ''}
+            </div>
+          `).join('')}
+        </div>
+      ` : ''}
+      <div style="font-size:12px; color:var(--text-muted);">
+        Session: ${c.session_id}<br>
+        تاریخ: ${formatDate(c.created_at)}<br>
+        سطح اطمینان: <span class="badge badge-${c.confidence}">${c.confidence}</span>
+      </div>
+      <div class="modal-actions">
+        <button class="btn btn-ghost" onclick="this.closest('.modal-backdrop').remove()">بستن</button>
+      </div>
+    </div>
+  `;
+  document.body.appendChild(modal);
+}
+
+async function deleteConversation(id) {
+  if (!confirm('حذف این مکالمه؟')) return;
+  try {
+    await api(`/conversations/${id}`, { method: 'DELETE' });
+    toast('✅ حذف شد', 'success');
+    renderConversations();
+  } catch (err) {
+    toast('خطا: ' + err.message, 'error');
+  }
+}
+
+function exportCSV() {
+  const sep = API_BASE.includes('?') ? '&' : '?';
+  fetch(`${API_BASE}${sep}client_id=${encodeURIComponent(CURRENT_CLIENT)}/conversations/export/csv`, {
+    headers: { 'Authorization': `Bearer ${TOKEN}` },
+  })
+    .then((r) => r.blob())
+    .then((blob) => {
+      const url = URL.createObjectURL(blob);
+      const a = document.createElement('a');
+      a.href = url;
+      a.download = `conversations-${CURRENT_CLIENT}.csv`;
+      a.click();
+      URL.revokeObjectURL(url);
+      toast('✅ خروجی دانلود شد', 'success');
+    });
+}
+
+// ═══════════════════════════════════════════════════════
+// صفحه: سرنخ‌ها
+// ═══════════════════════════════════════════════════════
+async function renderLeads() {
+  const main = document.getElementById('main-content');
+  try {
+    const data = await api('/leads');
+
+    main.innerHTML = `
+      ${renderTenantBar()}
+      <div class="page-header">
+        <div>
+          <h1>👥 سرنخ‌های فروش</h1>
+          <p>${data.pagination.total} سرنخ ثبت شده</p>
+        </div>
+      </div>
+
+      <div class="card">
+        ${data.leads.length === 0 ? `
+          <div class="empty-state">
+            <div class="icon">👤</div>
+            هنوز سرنخی ثبت نشده
+          </div>
+        ` : `
+          <div class="table-wrap">
+            <table>
+              <thead>
+                <tr>
+                  <th>نام</th>
+                  <th>ایمیل</th>
+                  <th>هدف</th>
+                  <th>امتیاز</th>
+                  <th>تاریخ</th>
+                </tr>
+              </thead>
+              <tbody>
+                ${data.leads.map((l) => `
+                  <tr>
+                    <td>${escapeHtml(l.name || '—')}</td>
+                    <td>${escapeHtml(l.email || '—')}</td>
+                    <td>${escapeHtml(l.intent || '—')}</td>
+                    <td><strong>${l.score}</strong></td>
+                    <td style="font-size:12px; color:var(--text-muted);">${formatDate(l.created_at)}</td>
+                  </tr>
+                `).join('')}
+              </tbody>
+            </table>
+          </div>
+        `}
+      </div>
+    `;
+  } catch (err) {
+    main.innerHTML = `<div class="empty-state"><div class="icon">⚠️</div>${err.message}</div>`;
+  }
+}
+
+// ═══════════════════════════════════════════════════════
+// صفحه: حافظه کاربران
+// ═══════════════════════════════════════════════════════
+async function renderMemories(page = 1, filters = {}) {
+  const main = document.getElementById('main-content');
+  const params = new URLSearchParams({ page, limit: 30, ...filters });
+  try {
+    const data = await api(`/memories?${params}`);
+    main.innerHTML = `
+      ${renderTenantBar()}
+      <div class="page-header">
+        <div>
+          <h1>🧠 حافظه کاربران</h1>
+          <p>${data.pagination.total} خاطره ثبت شده</p>
+        </div>
+      </div>
+
+      <div class="card">
+        <div style="display:grid; grid-template-columns: 2fr 1fr; gap:12px;">
+          <input class="input" id="memSessionFilter" placeholder="🔍 جستجو بر اساس Session ID..."
+                 value="${escapeHtml(filters.sessionId || '')}" />
+          <select class="select" id="memTypeFilter">
+            <option value="">همه انواع</option>
+            <option value="fact" ${filters.type === 'fact' ? 'selected' : ''}>واقعیت</option>
+            <option value="preference" ${filters.type === 'preference' ? 'selected' : ''}>ترجیح</option>
+            <option value="issue" ${filters.type === 'issue' ? 'selected' : ''}>مشکل</option>
+            <option value="summary" ${filters.type === 'summary' ? 'selected' : ''}>خلاصه</option>
+          </select>
+        </div>
+      </div>
+
+      <div class="card">
+        <div class="table-wrap">
+          <table>
+            <thead>
+              <tr>
+                <th>نوع</th>
+                <th>محتوا</th>
+                <th>اهمیت</th>
+                <th>Session</th>
+                <th>تاریخ</th>
+                <th></th>
+              </tr>
+            </thead>
+            <tbody>
+              ${data.memories.length === 0 ? `
+                <tr><td colspan="6"><div class="empty-state">
+                  <div class="icon">🧠</div>خاطره‌ای ثبت نشده
+                </div></td></tr>
+              ` : data.memories.map((m) => `
+                <tr>
+                  <td><span class="badge badge-${m.memory_type === 'issue' ? 'low' : m.memory_type === 'preference' ? 'high' : 'medium'}">${m.memory_type}</span></td>
+                  <td style="max-width:400px;">${escapeHtml(m.content)}</td>
+                  <td><strong>${m.importance}/10</strong></td>
+                  <td style="font-size:11px; color:var(--text-muted);">${escapeHtml(m.session_id.slice(0, 12))}...</td>
+                  <td style="font-size:12px; color:var(--text-muted);">${formatDate(m.created_at)}</td>
+                  <td>
+                    <button class="btn btn-sm btn-danger" onclick="deleteMemory('${m.id}')">🗑</button>
+                  </td>
+                </tr>
+              `).join('')}
+            </tbody>
+          </table>
+        </div>
+      </div>
+    `;
+
+    document.getElementById('memSessionFilter')?.addEventListener('input', debounce((e) => {
+      renderMemories(1, { ...filters, sessionId: e.target.value });
+    }, 500));
+    document.getElementById('memTypeFilter')?.addEventListener('change', (e) => {
+      renderMemories(1, { ...filters, type: e.target.value });
+    });
+  } catch (err) {
+    main.innerHTML = `<div class="empty-state"><div class="icon">⚠️</div>${err.message}</div>`;
+  }
+}
+
+async function deleteMemory(id) {
+  if (!confirm('حذف این خاطره؟')) return;
+  try {
+    await api(`/memories/${id}`, { method: 'DELETE' });
+    toast('✅ حذف شد', 'success');
+    renderMemories();
+  } catch (err) { toast('خطا: ' + err.message, 'error'); }
+}
+
+// ═══════════════════════════════════════════════════════
+// صفحه: ابزارها
+// ═══════════════════════════════════════════════════════
+async function renderTools() {
+  const main = document.getElementById('main-content');
+  try {
+    const data = await api('/tools');
+    const statsMap = {};
+    (data.stats || []).forEach((s) => { statsMap[s.tool_name] = s; });
+
+    main.innerHTML = `
+      ${renderTenantBar()}
+      <div class="page-header">
+        <div>
+          <h1>🛠 ابزارهای ربات</h1>
+          <p>مدیریت ابزارهای قابل فراخوانی توسط هوش مصنوعی</p>
+        </div>
+      </div>
+
+      <div class="card">
+        <div class="table-wrap">
+          <table>
+            <thead>
+              <tr>
+                <th>نام ابزار</th>
+                <th>وضعیت</th>
+                <th>نیاز به احراز هویت</th>
+                <th>فراخوانی (۷ روز)</th>
+                <th>نرخ موفقیت</th>
+                <th>میانگین زمان</th>
+                <th></th>
+              </tr>
+            </thead>
+            <tbody>
+              ${data.tools.map((t) => {
+                const stats = statsMap[t.tool_name] || { calls: 0, successes: 0, avg_time: 0 };
+                const successRate = stats.calls > 0
+                  ? Math.round((stats.successes / stats.calls) * 100)
+                  : 0;
+                return `
+                  <tr>
+                    <td><strong>${escapeHtml(t.tool_name)}</strong></td>
+                    <td>
+                      <span class="badge badge-${t.enabled ? 'high' : 'low'}">
+                        ${t.enabled ? 'فعال' : 'غیرفعال'}
+                      </span>
+                    </td>
+                    <td>${t.requires_auth ? '✅' : '❌'}</td>
+                    <td>${stats.calls}</td>
+                    <td>${successRate}%</td>
+                    <td>${Math.round(stats.avg_time || 0)}ms</td>
+                    <td>
+                      <button class="btn btn-sm ${t.enabled ? 'btn-danger' : 'btn-primary'}"
+                              onclick="toggleTool('${t.tool_name}', ${t.enabled ? 0 : 1})">
+                        ${t.enabled ? 'غیرفعال کن' : 'فعال کن'}
+                      </button>
+                    </td>
+                  </tr>
+                `;
+              }).join('')}
+            </tbody>
+          </table>
+        </div>
+      </div>
+
+      <div class="card">
+        <h3>📊 آخرین اجراها</h3>
+        <div id="recentExecutions"><div class="loading">در حال بارگذاری...</div></div>
+      </div>
+    `;
+
+    // بارگذاری آخرین اجراها
+    const execs = await api('/tool-executions?limit=10');
+    document.getElementById('recentExecutions').innerHTML = `
+      <div class="table-wrap">
+        <table>
+          <thead>
+            <tr><th>ابزار</th><th>وضعیت</th><th>زمان</th><th>تاریخ</th></tr>
+          </thead>
+          <tbody>
+            ${execs.executions.map((e) => `
+              <tr>
+                <td>${escapeHtml(e.tool_name)}</td>
+                <td><span class="badge badge-${e.success ? 'high' : 'low'}">${e.success ? 'موفق' : 'ناموفق'}</span></td>
+                <td>${e.execution_time_ms}ms</td>
+                <td style="font-size:12px; color:var(--text-muted);">${formatDate(e.created_at)}</td>
+              </tr>
+            `).join('')}
+          </tbody>
+        </table>
+      </div>
+    `;
+  } catch (err) {
+    main.innerHTML = `<div class="empty-state"><div class="icon">⚠️</div>${err.message}</div>`;
+  }
+}
+
+async function toggleTool(name, enabled) {
+  try {
+    await api(`/tools/${name}`, {
+      method: 'PUT',
+      body: JSON.stringify({ enabled: !!enabled }),
+    });
+    toast('✅ به‌روزرسانی شد', 'success');
+    renderTools();
+  } catch (err) { toast('خطا: ' + err.message, 'error'); }
+}
+
+// ═══════════════════════════════════════════════════════
+// صفحه: فایل‌های رسانه
+// ═══════════════════════════════════════════════════════
+async function renderMedia(page = 1, filters = {}) {
+  const main = document.getElementById('main-content');
+  const params = new URLSearchParams({ page, limit: 30, ...filters });
+  try {
+    const data = await api(`/media?${params}`);
+    main.innerHTML = `
+      ${renderTenantBar()}
+      <div class="page-header">
+        <div>
+          <h1>🖼 فایل‌های رسانه</h1>
+          <p>${data.pagination.total} فایل ذخیره شده</p>
+        </div>
+      </div>
+
+      <div class="card">
+        <select class="select" id="mediaTypeFilter">
+          <option value="">همه انواع</option>
+          <option value="image" ${filters.type === 'image' ? 'selected' : ''}>تصویر</option>
+          <option value="audio" ${filters.type === 'audio' ? 'selected' : ''}>صوت</option>
+          <option value="document" ${filters.type === 'document' ? 'selected' : ''}>سند</option>
+        </select>
+      </div>
+
+      <div class="card">
+        ${data.files.length === 0 ? `
+          <div class="empty-state"><div class="icon">📭</div>فایلی یافت نشد</div>
+        ` : `
+          <div style="display:grid; grid-template-columns: repeat(auto-fill, minmax(220px, 1fr)); gap:16px;">
+            ${data.files.map((f) => `
+              <div style="background:#f9fafb; border-radius:12px; padding:12px; border:1px solid var(--border);">
+                <div style="margin-bottom:8px;">
+                  ${f.file_type === 'image'
+                    ? `<img src="${window.apiUrl('/api/admin/media/file/' + f.id, CURRENT_CLIENT)}" style="width:100%; height:140px; object-fit:cover; border-radius:8px;" />`
+                    : `<div style="height:140px; display:flex; align-items:center; justify-content:center; background:#e5e7eb; border-radius:8px; font-size:32px;">🎵</div>`
+                  }
+                </div>
+                <div style="font-size:11px; color:var(--text-muted); margin-bottom:6px;">
+                  ${f.file_type} • ${Math.round(f.file_size / 1024)} KB
+                </div>
+                ${f.analysis ? `<div style="font-size:11px; margin-bottom:6px;">${escapeHtml(f.analysis.slice(0, 80))}...</div>` : ''}
+                ${f.extracted_text ? `<div style="font-size:11px; margin-bottom:6px;">${escapeHtml(f.extracted_text.slice(0, 80))}...</div>` : ''}
+                <button class="btn btn-sm btn-danger" onclick="deleteMedia('${f.id}')">🗑 حذف</button>
+              </div>
+            `).join('')}
+          </div>
+        `}
+      </div>
+    `;
+    document.getElementById('mediaTypeFilter')?.addEventListener('change', (e) => {
+      renderMedia(1, { ...filters, type: e.target.value });
+    });
+  } catch (err) {
+    main.innerHTML = `<div class="empty-state"><div class="icon">⚠️</div>${err.message}</div>`;
+  }
+}
+
+async function deleteMedia(id) {
+  if (!confirm('حذف این فایل؟')) return;
+  try {
+    await api(`/media/${id}`, { method: 'DELETE' });
+    toast('✅ حذف شد', 'success');
+    renderMedia();
+  } catch (err) { toast('خطا: ' + err.message, 'error'); }
+}
+
+// ═══════════════════════════════════════════════════════
+// صفحه: آزمایشگاه
+// ═══════════════════════════════════════════════════════
+function renderPlayground() {
+  const main = document.getElementById('main-content');
+  main.innerHTML = `
+    ${renderTenantBar()}
+    <div class="page-header">
+      <div>
+        <h1>🧪 آزمایشگاه RAG</h1>
+        <p>پاسخ‌ها را قبل از دیپلوی تست کنید — مشتری: ${escapeHtml(CURRENT_CLIENT)}</p>
+      </div>
+    </div>
+
+    <div class="card">
+      <div class="form-group">
+        <label>سوال تستی</label>
+        <textarea class="textarea" id="playground-input"
+                  placeholder="مثال: ساعت کاری شما چنده؟"></textarea>
+      </div>
+      <button class="btn btn-primary" onclick="runPlayground()">🚀 اجرا</button>
+      <div id="playground-result"></div>
+    </div>
+  `;
+}
+
+async function runPlayground() {
+  const input = document.getElementById('playground-input').value.trim();
+  if (!input) return toast('سوال را وارد کنید', 'error');
+
+  const resultDiv = document.getElementById('playground-result');
+  resultDiv.innerHTML = '<div class="loading">در حال پردازش...</div>';
+
+  try {
+    const data = await api('/playground', {
+      method: 'POST',
+      body: JSON.stringify({ message: input }),
+    });
+
+    resultDiv.innerHTML = `
+      <div class="playground-result">
+        <div style="display:flex; justify-content:space-between; margin-bottom:12px;">
+          <strong>پاسخ ربات</strong>
+          <span class="badge badge-${data.confidence}">${data.confidence}</span>
+        </div>
+        <div class="playground-reply">${escapeHtml(data.reply)}</div>
+
+        ${data.sources.length > 0 ? `
+          <div style="font-size:13px; font-weight:bold; margin-bottom:12px;">
+            📚 منابع استفاده شده (${data.sources.length})
+          </div>
+          ${data.sources.map((s) => `
+            <div class="playground-source">
+              <div class="playground-source-title">
+                ${escapeHtml(s.title)} — امتیاز: ${s.score}
+              </div>
+              <div class="playground-source-text">${escapeHtml(s.text.slice(0, 300))}...</div>
+            </div>
+          `).join('')}
+        ` : '<div style="color:var(--danger);">⚠️ هیچ منبع مرتبطی یافت نشد</div>'}
+
+        <details style="margin-top:16px; font-size:12px; color:var(--text-muted);">
+          <summary>اطلاعات دیباگ</summary>
+          <pre style="background:#f3f4f6; padding:12px; border-radius:8px;
+                      overflow-x:auto; margin-top:8px; font-size:11px;">
+${escapeHtml(JSON.stringify(data.debug, null, 2))}
+          </pre>
+        </details>
+      </div>
+    `;
+  } catch (err) {
+    resultDiv.innerHTML = `<div style="color:var(--danger);">${escapeHtml(err.message)}</div>`;
+  }
+}
+
+// ═══════════════════════════════════════════════════════
+// صفحه: تنظیمات
+// ═══════════════════════════════════════════════════════
+async function renderSettings() {
+  const main = document.getElementById('main-content');
+  try {
+    const data = await api('/settings');
+    const s = data.settings;
+
+    main.innerHTML = `
+      ${renderTenantBar()}
+      <div class="page-header">
+        <div>
+          <h1>⚙️ تنظیمات</h1>
+          <p>پارامترهای موتور RAG برای مشتری: ${escapeHtml(CURRENT_CLIENT)}</p>
+        </div>
+        <button class="btn btn-primary" onclick="saveSettings()">💾 ذخیره</button>
+      </div>
+
+      <div class="card">
+        <h3>پارامترهای موتور جستجو</h3>
+        <div style="display:grid; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); gap:16px;">
+          <div class="form-group">
+            <label>آستانه شباهت (0-1)</label>
+            <input class="input" id="s-threshold" type="number" step="0.05" min="0" max="1"
+                   value="${s.similarity_threshold || '0.5'}" />
+            <small style="color:var(--text-muted); font-size:11px;">
+              عدد بالاتر = پاسخ دقیق‌تر ولی کمتر
+            </small>
+          </div>
+          <div class="form-group">
+            <label>تعداد نتایج (Top K)</label>
+            <input class="input" id="s-topk" type="number" min="1" max="20"
+                   value="${s.top_k || '5'}" />
+          </div>
+          <div class="form-group">
+            <label>حداکثر توکن پاسخ</label>
+            <input class="input" id="s-maxtokens" type="number" min="50" max="2048"
+                   value="${s.max_tokens || '300'}" />
+          </div>
+          <div class="form-group">
+            <label>دما (خلاقیت)</label>
+            <input class="input" id="s-temperature" type="number" step="0.05" min="0" max="1"
+                   value="${s.temperature || '0.1'}" />
+            <small style="color:var(--text-muted); font-size:11px;">
+              نزدیک صفر = دقیق‌تر و قابل پیش‌بینی‌تر
+            </small>
+          </div>
+        </div>
+      </div>
+
+      <div class="card">
+        <h3>متن راهنما (System Prompt)</h3>
+        <div class="form-group">
+          <textarea class="textarea" id="s-system-prompt" style="min-height:240px;">${escapeHtml(s.system_prompt || '')}</textarea>
+        </div>
+        <small style="color:var(--text-muted); font-size:12px;">
+          این متن به مدل گفته می‌شود که چگونه پاسخ دهد. هرچه دقیق‌تر، نتایج بهتر.
+        </small>
+      </div>
+    `;
+  } catch (err) {
+    main.innerHTML = `<div class="empty-state"><div class="icon">⚠️</div>${err.message}</div>`;
+  }
+}
+
+async function saveSettings() {
+  const settings = {
+    similarity_threshold: document.getElementById('s-threshold').value,
+    top_k: document.getElementById('s-topk').value,
+    max_tokens: document.getElementById('s-maxtokens').value,
+    temperature: document.getElementById('s-temperature').value,
+    system_prompt: document.getElementById('s-system-prompt').value,
+  };
+
+  try {
+    await api('/settings', {
+      method: 'PUT',
+      body: JSON.stringify(settings),
+    });
+    toast('✅ تنظیمات ذخیره شد', 'success');
+  } catch (err) {
+    toast('خطا: ' + err.message, 'error');
+  }
+}
+
+// ═══════════════════════════════════════════════════════
+// شروع
+// ═══════════════════════════════════════════════════════
+if (TOKEN) {
+  (async () => {
+    try {
+      const res = await fetch(`${API_BASE}/me`, {
+        headers: { 'Authorization': `Bearer ${TOKEN}` },
+      });
+      if (res.ok) {
+        const data = await res.json();
+        CURRENT_ROLE = data.role;
+        CURRENT_CLIENT = data.clientId;
+        // ادمین مشتری همیشه روی clientId خودش قفل است
+        if (CURRENT_ROLE === 'super') {
+          CURRENT_CLIENT = sessionStorage.getItem('activeClient') || data.clientId || 'default';
+        }
+        await showApp();
+      } else {
+        logout();
+      }
+    } catch (e) {
+      logout();
+    }
+  })();
+}
+</script>
+</body>
+</html>
