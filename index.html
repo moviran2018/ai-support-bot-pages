@@ -1,0 +1,115 @@
+<!DOCTYPE html>
+<html lang="fa" dir="rtl">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>چت‌بات پشتیبانی هوشمند</title>
+<style>
+  * { margin: 0; padding: 0; box-sizing: border-box; }
+  body {
+    font-family: 'Segoe UI', Tahoma, sans-serif;
+    background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+    min-height: 100vh;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    padding: 20px;
+  }
+  .container {
+    background: #fff;
+    border-radius: 24px;
+    box-shadow: 0 20px 60px rgba(0,0,0,0.3);
+    max-width: 700px;
+    width: 100%;
+    padding: 48px 40px;
+    text-align: center;
+  }
+  h1 {
+    color: #1a1a2e;
+    font-size: 2rem;
+    margin-bottom: 12px;
+  }
+  .subtitle {
+    color: #666;
+    font-size: 1.05rem;
+    margin-bottom: 36px;
+    line-height: 1.7;
+  }
+  .grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+    gap: 16px;
+    margin-bottom: 36px;
+  }
+  .card {
+    background: #f8f9ff;
+    border: 2px solid #e8ecf7;
+    border-radius: 16px;
+    padding: 24px 16px;
+    text-decoration: none;
+    transition: all 0.25s ease;
+    display: block;
+  }
+  .card:hover {
+    border-color: #667eea;
+    transform: translateY(-4px);
+    box-shadow: 0 10px 24px rgba(102,126,234,0.2);
+  }
+  .card .icon { font-size: 2.2rem; display: block; margin-bottom: 10px; }
+  .card .name { font-weight: 700; color: #1a1a2e; font-size: 1rem; display: block; }
+  .card .desc { color: #888; font-size: 0.85rem; margin-top: 6px; display: block; line-height: 1.5; }
+  .footer {
+    color: #999;
+    font-size: 0.82rem;
+    line-height: 1.8;
+    border-top: 1px solid #eee;
+    padding-top: 20px;
+  }
+  .footer code {
+    background: #f0f0f5;
+    padding: 2px 8px;
+    border-radius: 6px;
+    font-size: 0.78rem;
+    color: #667eea;
+  }
+  @media (max-width: 500px) {
+    .container { padding: 32px 20px; }
+    h1 { font-size: 1.5rem; }
+  }
+</style>
+</head>
+<body>
+<div class="container">
+  <h1>🤖 چت‌بات پشتیبانی هوشمند</h1>
+  <p class="subtitle">سیستم پشتیبانی چندمستأجری با جستجوی ترکیبی و هوش مصنوعی</p>
+
+  <div class="grid">
+    <a class="card" href="widget.html">
+      <span class="icon">💬</span>
+      <span class="name">ویجت چت</span>
+      <span class="desc">چت تعاملی با تشخیص نیت و پاسخ هوشمند</span>
+    </a>
+    <a class="card" href="chat.html">
+      <span class="icon">🗂️</span>
+      <span class="name">چت کامل</span>
+      <span class="desc">نمایش کامل مکالمه با منابع و بازخورد</span>
+    </a>
+    <a class="card" href="admin.html">
+      <span class="icon">⚙️</span>
+      <span class="name">پنل مدیریت</span>
+      <span class="desc">مدیریت مشتریان، مکالمات و تنظیمات</span>
+    </a>
+    <a class="card" href="admin-knowledge.html">
+      <span class="icon">📚</span>
+      <span class="name">پنل دانش</span>
+      <span class="desc">آپلود فایل، استخراج از لینک و متن دستی</span>
+    </a>
+  </div>
+
+  <div class="footer">
+    برای امبد کردن در سایت خودتان:<br>
+    <code>&lt;script src="embed.js" data-client="CLIENT_ID"&gt;&lt;/script&gt;</code>
+  </div>
+</div>
+</body>
+</html>
