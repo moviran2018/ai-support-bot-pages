@@ -368,8 +368,23 @@
 // ═══════════════════════════════════════════════════════
 // پیکربندی
 // ═══════════════════════════════════════════════════════
+// NOTE: window.apiUrl('/api/admin') شامل query string است
+// (?client=…). نمی‌توانیم /me را مستقیم به آن بچسبانیم چون
+// خروجی می‌شود: /api/admin?client=default/me ← ۴۰۴.
+// برای همین adminUrl() را می‌سازیم که path را قبل از ? قرار می‌دهد.
 const API_BASE = window.apiUrl('/api/admin');
 let TOKEN = sessionStorage.getItem('adminToken') || '';
+
+/**
+ * ساخت URL مسیر ادمین — path قبل از query string قرار می‌گیرد.
+ * @param {string} path مسیر زیرمسیر، مثلاً '/me' یا '/clients'
+ * @param {string} cid شناسه مشتری (پیش‌فرض: از query param صفحه)
+ * @returns {string} URL کامل و درست
+ */
+function adminUrl(path, cid) {
+  const base = window.APP_CONFIG.API_BASE || window.APP_CONFIG.WORKER_URL;
+  return `${base}/api/admin${path}?client_id=${encodeURIComponent(cid || window.getClientId())}`;
+}
 
 // وضعیت جاری کاربر
 let CURRENT_ROLE = null;      // 'super' | 'client'
@@ -391,7 +406,7 @@ async function login() {
   }
 
   try {
-    const res = await fetch(`${API_BASE}/me`, {
+    const res = await fetch(adminUrl('/me'), {
       headers: { 'Authorization': `Bearer ${token}` },
     });
     if (res.ok) {
@@ -455,8 +470,7 @@ document.getElementById('token-input')?.addEventListener('keypress', (e) => {
 // (سرور برای ادمین مشتری نادیده می‌گیرد و از clientId خودش استفاده می‌کند)
 // ═══════════════════════════════════════════════════════
 async function api(path, options = {}) {
-  const sep = path.includes('?') ? '&' : '?';
-  const url = `${API_BASE}${path}${sep}client_id=${encodeURIComponent(CURRENT_CLIENT || 'default')}`;
+  const url = adminUrl(path, CURRENT_CLIENT || 'default');
 
   const res = await fetch(url, {
     ...options,
@@ -1131,8 +1145,7 @@ async function deleteConversation(id) {
 }
 
 function exportCSV() {
-  const sep = API_BASE.includes('?') ? '&' : '?';
-  fetch(`${API_BASE}${sep}client_id=${encodeURIComponent(CURRENT_CLIENT)}/conversations/export/csv`, {
+  fetch(adminUrl('/conversations/export/csv', CURRENT_CLIENT || 'default'), {
     headers: { 'Authorization': `Bearer ${TOKEN}` },
   })
     .then((r) => r.blob())
@@ -1633,7 +1646,7 @@ async function saveSettings() {
 if (TOKEN) {
   (async () => {
     try {
-      const res = await fetch(`${API_BASE}/me`, {
+      const res = await fetch(adminUrl('/me'), {
         headers: { 'Authorization': `Bearer ${TOKEN}` },
       });
       if (res.ok) {
