@@ -327,7 +327,10 @@
   <div class="panel" id="panel-list">
     <div style="display:flex;justify-content:space-between;margin-bottom:12px;align-items:center">
       <span class="hint" id="listInfo"></span>
-      <button class="btn" style="padding:6px 16px;font-size:12px" onclick="loadDocuments()">↻ به‌روزرسانی</button>
+      <div style="display:flex;gap:8px">
+        <button class="btn" style="padding:6px 16px;font-size:12px" onclick="reingestFailed()" id="reingestBtn">↻ پردازش مجدد اسناد ناموفق</button>
+        <button class="btn" style="padding:6px 16px;font-size:12px" onclick="loadDocuments()">↻ به‌روزرسانی</button>
+      </div>
     </div>
     <div style="overflow-x:auto">
       <table>
@@ -684,6 +687,13 @@ async function loadDocuments() {
     const docs = data.documents || [];
     info.textContent = `${data.total} سند — R2: ${data.r2Enabled ? 'فعال' : 'غیرفعال'}`;
 
+    // دکمه reingest فقط وقتی سند ناموفق هست نمایش داده می‌شود
+    const reingestBtn = document.getElementById('reingestBtn');
+    if (reingestBtn) {
+      const hasFailed = docs.some((d) => d.status === 'failed');
+      reingestBtn.style.display = hasFailed ? '' : 'none';
+    }
+
     if (!docs.length) {
       tbody.innerHTML = '';
       empty.style.display = 'block';
@@ -731,6 +741,39 @@ async function deleteDocument(id) {
     loadDocuments();
   } catch (e) {
     toast(e.message, 'error');
+  }
+}
+
+/**
+ * پردازش مجدد اسنادی که قبلاً ناموفق بوده‌اند (مثلاً به دلیل
+ * تمام شدن سهمیه Workers AI). این دکمه فقط وقتی نمایش داده
+ * می‌شود که حداقل یک سند ناموفق وجود داشته باشد.
+ */
+async function reingestFailed() {
+  const btn = document.getElementById('reingestBtn');
+  if (!btn) return;
+  if (!confirm('اسناد ناموفق دوباره پردازش می‌شوند. ادامه می‌دهید؟')) return;
+
+  btn.disabled = true;
+  btn.textContent = 'در حال پردازش...';
+
+  try {
+    const res = await apiFetch('/api/admin/knowledge/reingest-failed', {
+      method: 'POST',
+    });
+    const data = await res.json();
+    if (!res.ok) throw new Error(data.error);
+
+    toast(data.message);
+    if (data.errors && data.errors.length) {
+      console.warn('Reingest errors:', data.errors);
+    }
+    loadDocuments();
+  } catch (e) {
+    toast(e.message, 'error');
+  } finally {
+    btn.disabled = false;
+    btn.textContent = '↻ پردازش مجدد اسناد ناموفق';
   }
 }
 
