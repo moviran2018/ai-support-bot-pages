@@ -348,6 +348,26 @@
 
 <div class="toast" id="toast"></div>
 
+<!-- ── مودال ویرایش سند ── -->
+<div id="editModal" style="display:none;position:fixed;inset:0;background:rgba(0,0,0,0.5);z-index:100;align-items:center;justify-content:center">
+  <div style="background:var(--surface);border-radius:12px;padding:20px;width:min(640px,92vw);max-height:86vh;overflow-y:auto;box-shadow:0 20px 60px rgba(0,0,0,0.3)">
+    <h3 style="margin:0 0 14px;font-size:17px">✏️ ویرایش سند</h3>
+    <div class="form-group">
+      <label>عنوان</label>
+      <input id="editTitle" type="text" placeholder="عنوان سند" />
+    </div>
+    <div class="form-group">
+      <label>محتوا</label>
+      <textarea id="editContent" rows="12" style="font-family:monospace;font-size:13px" placeholder="محتوای سند..."></textarea>
+      <div class="hint" id="editHint"></div>
+    </div>
+    <div style="display:flex;gap:10px;justify-content:flex-end;margin-top:16px">
+      <button class="btn" onclick="closeEditModal()">انصراف</button>
+      <button class="btn" id="editSaveBtn" onclick="saveEditedDocument()">ذخیره و پردازش مجدد</button>
+    </div>
+  </div>
+</div>
+
 <script src="./config.js"></script>
 
 <script>
@@ -711,7 +731,10 @@ async function loadDocuments() {
         <td>${fmtSize(d.file_size)}</td>
         <td>${fmtDate(d.created_at)}</td>
         <td>
-          <button class="btn-danger" onclick="deleteDocument('${d.id}')">حذف</button>
+          <div style="display:flex;gap:6px">
+            <button class="btn" style="padding:4px 10px;font-size:11px" onclick="editDocument('${d.id}')">✏️ ویرایش</button>
+            <button class="btn-danger" onclick="deleteDocument('${d.id}')">حذف</button>
+          </div>
         </td>
       </tr>
     `).join('');
@@ -774,6 +797,82 @@ async function reingestFailed() {
   } finally {
     btn.disabled = false;
     btn.textContent = '↻ پردازش مجدد اسناد ناموفق';
+  }
+}
+
+/**
+ * باز کردن مودال ویرایش سند: محتوای فعلی را از سرور می‌گیرد.
+ */
+async function editDocument(id) {
+  const modal = document.getElementById('editModal');
+  const titleEl = document.getElementById('editTitle');
+  const contentEl = document.getElementById('editContent');
+  const hintEl = document.getElementById('editHint');
+
+  // نمایش مودال با حالت بارگذاری
+  modal.style.display = 'flex';
+  titleEl.value = '';
+  contentEl.value = 'در حال بارگذاری محتوا...';
+  contentEl.disabled = true;
+  hintEl.textContent = '';
+
+  try {
+    const res = await apiFetch(`/api/admin/knowledge/documents/${id}/content`);
+    const data = await res.json();
+    if (!res.ok) throw new Error(data.error);
+
+    titleEl.value = data.title || '';
+    contentEl.value = data.content || '';
+    contentEl.disabled = false;
+    contentEl.dataset.docId = id;
+    hintEl.textContent = `${(data.content || '').length} کاراکتر — بعد از ذخیره، سند دوباره پردازش می‌شود.`;
+  } catch (e) {
+    toast(e.message, 'error');
+    closeEditModal();
+  }
+}
+
+function closeEditModal() {
+  document.getElementById('editModal').style.display = 'none';
+}
+
+/**
+ * ذخیره سند ویرایش‌شده و پردازش مجدد آن.
+ */
+async function saveEditedDocument() {
+  const contentEl = document.getElementById('editContent');
+  const titleEl = document.getElementById('editTitle');
+  const docId = contentEl.dataset.docId;
+
+  if (!docId) return;
+  if (!contentEl.value.trim() || contentEl.value.trim().length < 10) {
+    toast('محتوا باید حداقل ۱۰ کاراکتر باشد.', 'error');
+    return;
+  }
+
+  const btn = document.getElementById('editSaveBtn');
+  btn.disabled = true;
+  btn.textContent = 'در حال پردازش...';
+
+  try {
+    const res = await apiFetch(`/api/admin/knowledge/documents/${docId}`, {
+      method: 'PUT',
+      body: JSON.stringify({
+        title: titleEl.value.trim(),
+        content: contentEl.value,
+      }),
+    });
+    const data = await res.json();
+    if (!res.ok) throw new Error(data.error);
+
+    toast(data.message);
+    closeEditModal();
+    loadDocuments();
+  } catch (e) {
+    toast(e.message, 'error');
+  } finally {
+    btn.disabled = false;
+    btn.textContent = 'ذخیره و پردازش مجدد';
   }
 }
 
