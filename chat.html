@@ -47,7 +47,6 @@
       border-bottom-left-radius: 4px;
     }
     .message.typing { color: #888; font-style: italic; }
-    .sources { font-size: 11.5px; color: #888; margin-top: 8px; padding-top: 8px; border-top: 1px dashed #ccc; }
     .chat-input { display: flex; padding: 16px; border-top: 1px solid #e9ecef; background: #fff; }
     .chat-input input {
       flex: 1; border: 1px solid #dee2e6; border-radius: 24px;
@@ -60,9 +59,6 @@
     }
     .chat-input button:hover { background: #5a6fd6; }
     .chat-input button:disabled { background: #ccc; cursor: not-allowed; }
-    .confidence-high { border-right: 3px solid #22c55e; }
-    .confidence-medium { border-right: 3px solid #f59e0b; }
-    .confidence-low { border-right: 3px solid #ef4444; }
 
     @media (max-width: 640px) {
       body { padding: 0; }
@@ -75,7 +71,6 @@
   <div id="chat-container">
     <div class="chat-header">
       <span class="dot"></span>🤖 دستیار پشتیبانی هوشمند
-      <span class="client-badge" id="clientBadge">default</span>
     </div>
     <div class="chat-messages" id="messages"></div>
     <div class="chat-input">
@@ -91,23 +86,14 @@
     const sessionId = localStorage.getItem(`chatSession_${CLIENT_ID}`) || crypto.randomUUID();
     localStorage.setItem(`chatSession_${CLIENT_ID}`, sessionId);
 
-    document.getElementById('clientBadge').textContent = CLIENT_ID;
-
     const messagesDiv = document.getElementById('messages');
     const input = document.getElementById('userInput');
     const sendBtn = document.getElementById('sendBtn');
 
-    function addMessage(text, role, sources = [], confidence = null) {
+    function addMessage(text, role) {
       const div = document.createElement('div');
       div.className = `message ${role}`;
-      if (confidence) div.classList.add(`confidence-${confidence}`);
       div.textContent = text;
-      if (sources.length > 0) {
-        const src = document.createElement('div');
-        src.className = 'sources';
-        src.textContent = '📚 منابع: ' + sources.map(s => s.title).join(' • ');
-        div.appendChild(src);
-      }
       messagesDiv.appendChild(div);
       messagesDiv.scrollTop = messagesDiv.scrollHeight;
     }
@@ -138,7 +124,7 @@
           addMessage('⚠️ ' + data.error, 'bot');
           return;
         }
-        addMessage(data.reply, 'bot', data.sources || [], data.confidence);
+        addMessage(data.reply, 'bot');
       } catch (e) {
         typing.remove();
         addMessage('خطا در ارتباط. لطفاً دوباره تلاش کنید.', 'bot');
