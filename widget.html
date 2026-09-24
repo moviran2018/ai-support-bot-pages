@@ -29,9 +29,6 @@
     .message.bot { margin-left: auto; background: #e9ecef; color: #333; border-bottom-left-radius: 4px; }
     .message.typing { color: #888; font-style: italic; }
     .message img { max-width: 100%; border-radius: 8px; margin-top: 8px; }
-    .sources { font-size: 11px; color: #888; margin-top: 6px; padding-top: 6px; border-top: 1px dashed #ccc; }
-    .tool-calls { font-size: 11px; color: #16a34a; margin-top: 6px; padding: 6px 10px; background: #dcfce7; border-radius: 6px; }
-    .memory-badge { font-size: 11px; color: #7c3aed; margin-top: 4px; }
     .chat-input {
       padding: 12px; border-top: 1px solid #e9ecef; background: #fff;
       display: flex; flex-direction: column; gap: 8px;
@@ -66,17 +63,12 @@
       border-radius: 50%; background: #ef4444; color: white; border: none;
       cursor: pointer; font-size: 12px;
     }
-    .client-badge {
-      font-size: 10px; opacity: 0.75; background: rgba(255,255,255,0.2);
-      padding: 2px 8px; border-radius: 10px;
-    }
   </style>
 </head>
 <body>
   <div id="chat-widget">
     <div class="chat-header">
       <span>🤖 دستیار پشتیبانی هوشمند</span>
-      <span class="client-badge" id="clientBadge">default</span>
     </div>
     <div class="chat-messages" id="messages"></div>
     <div class="chat-input">
@@ -100,8 +92,6 @@
     const sessionId = localStorage.getItem(`chatSession_${CLIENT_ID}`) || crypto.randomUUID();
     localStorage.setItem(`chatSession_${CLIENT_ID}`, sessionId);
 
-    document.getElementById('clientBadge').textContent = CLIENT_ID;
-
     const messagesDiv = document.getElementById('messages');
     const input = document.getElementById('userInput');
     const sendBtn = document.getElementById('sendBtn');
@@ -121,24 +111,6 @@
         const img = document.createElement('img');
         img.src = opts.imageUrl;
         div.appendChild(img);
-      }
-      if (opts.sources?.length > 0) {
-        const src = document.createElement('div');
-        src.className = 'sources';
-        src.textContent = '📚 ' + opts.sources.map((s) => s.title).join(' • ');
-        div.appendChild(src);
-      }
-      if (opts.toolCalls?.length > 0) {
-        const tc = document.createElement('div');
-        tc.className = 'tool-calls';
-        tc.textContent = '🛠 ' + opts.toolCalls.map((t) => t.name).join(' • ');
-        div.appendChild(tc);
-      }
-      if (opts.memoriesUsed > 0) {
-        const mb = document.createElement('div');
-        mb.className = 'memory-badge';
-        mb.textContent = `🧠 ${opts.memoriesUsed} خاطره مرتبط استفاده شد`;
-        div.appendChild(mb);
       }
       messagesDiv.appendChild(div);
       messagesDiv.scrollTop = messagesDiv.scrollHeight;
@@ -274,11 +246,7 @@
           return;
         }
 
-        addMessage(data.reply, 'bot', {
-          sources: data.sources || [],
-          toolCalls: data.toolCalls || [],
-          memoriesUsed: data.memoriesUsed || 0,
-        });
+        addMessage(data.reply, 'bot');
       } catch (e) {
         typing.remove();
         addMessage('خطا در ارتباط. لطفاً دوباره تلاش کنید.', 'bot');
