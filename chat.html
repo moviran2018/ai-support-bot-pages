@@ -100,7 +100,6 @@
 
     // ═══ پیام‌های انتظار (سرگرمی کاربر هنگام فکر کردن هوش مصنوعی) ═══
     const waitingMessages = [
-      'کمک صبر کن، دارم فکر می‌کنم... 🤔',
       'تقریباً آماده شد... ✨',
       'یه لحظه، دارم اطلاعات رو پیدا می‌کنم... 📚',
       'ای بابا، سوال خوبیه! یه کم بیشتر باید فکر کنم... 💭',
@@ -114,6 +113,9 @@
 
     let waitTimer = null;
     function startWaitingMessages(typingEl) {
+      // اولین پیام همیشه ثابت است
+      typingEl.textContent = 'یه کم صبر کن دارم فکر می کنم';
+      messagesDiv.scrollTop = messagesDiv.scrollHeight;
       let lastIdx = -1;
       waitTimer = setInterval(() => {
         let next;
@@ -122,7 +124,7 @@
         lastIdx = next;
         typingEl.textContent = waitingMessages[next];
         messagesDiv.scrollTop = messagesDiv.scrollHeight;
-      }, 4000);
+      }, 5000);
     }
     function stopWaitingMessages() {
       if (waitTimer) { clearInterval(waitTimer); waitTimer = null; }
