@@ -98,6 +98,36 @@
       messagesDiv.scrollTop = messagesDiv.scrollHeight;
     }
 
+    // ═══ پیام‌های انتظار (سرگرمی کاربر هنگام فکر کردن هوش مصنوعی) ═══
+    const waitingMessages = [
+      'کمک صبر کن، دارم فکر می‌کنم... 🤔',
+      'تقریباً آماده شد... ✨',
+      'یه لحظه، دارم اطلاعات رو پیدا می‌کنم... 📚',
+      'ای بابا، سوال خوبیه! یه کم بیشتر باید فکر کنم... 💭',
+      'الان جوابت رو می‌دم... ⏳',
+      'دارم تو حافظه‌م می‌گردم... 🧠',
+      'کمی موند، عجله نکن... 🌟',
+      'پشت صحنه بهترین جواب رو انتخاب می‌کنم... 🎯',
+      'نزدیک شدم، یه نفس عمیق بکش... 😌',
+      'دارم جملات رو مرتب می‌کنم... 📝',
+    ];
+
+    let waitTimer = null;
+    function startWaitingMessages(typingEl) {
+      let lastIdx = -1;
+      waitTimer = setInterval(() => {
+        let next;
+        do { next = Math.floor(Math.random() * waitingMessages.length); }
+        while (next === lastIdx);
+        lastIdx = next;
+        typingEl.textContent = waitingMessages[next];
+        messagesDiv.scrollTop = messagesDiv.scrollHeight;
+      }, 4000);
+    }
+    function stopWaitingMessages() {
+      if (waitTimer) { clearInterval(waitTimer); waitTimer = null; }
+    }
+
     async function sendMessage() {
       const message = input.value.trim();
       if (!message || sendBtn.disabled) return;
@@ -112,6 +142,9 @@
       messagesDiv.appendChild(typing);
       messagesDiv.scrollTop = messagesDiv.scrollHeight;
 
+      // بعد از ۳ ثانیه اگه جواب نیامد، پیام‌های سرگرم‌کننده نشان داده می‌شود
+      const delayTimer = setTimeout(() => startWaitingMessages(typing), 3000);
+
       try {
         const res = await fetch(CHAT_URL, {
           method: 'POST',
@@ -119,6 +152,8 @@
           body: JSON.stringify({ message, sessionId }),
         });
         const data = await res.json();
+        clearTimeout(delayTimer);
+        stopWaitingMessages();
         typing.remove();
         if (data.error) {
           addMessage('⚠️ ' + data.error, 'bot');
@@ -126,6 +161,8 @@
         }
         addMessage(data.reply, 'bot');
       } catch (e) {
+        clearTimeout(delayTimer);
+        stopWaitingMessages();
         typing.remove();
         addMessage('خطا در ارتباط. لطفاً دوباره تلاش کنید.', 'bot');
       } finally {
